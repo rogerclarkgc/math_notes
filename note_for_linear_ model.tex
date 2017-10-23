@@ -1,0 +1,42 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{ctex}
+\begin{titlepage}
+\author{rogerclark}
+\date{2017.10.23}
+\title{\LARGE Notes for Linear model}
+\end{titlepage}
+\begin{document}
+\maketitle
+\section{Introduction of Linear model}
+The basic linear model is define by:
+\begin{equation}
+y = f(X_1, \ldots, X_K, \beta _1, \ldots, \beta _K)
+\end{equation}
+\par Where $f$ is some well defined function and $\beta_1, \ldots, \beta_K$ are the parameters which characterize the role and contribution of $X_1, \ldots, X_K$\\
+The term $e$ reflects the stochastic nature of the relationship between $y$ and $X_1, \ldots, X_K$ and indicates that such a relationship is not exact in nature.When $e=0$, then the model is called the mathematical model otherwise the statistical model.($e$ 是误差项，同随机变量组$X_1, \ldots, X_K$ 一样会影响$y$ 的结果，相当于在研究中没被考虑的变量以及系统本身的内在干扰，在模型中成为了误差项)\\
+\\
+PAY ATTENTION:The `linear` relationship of linear model is described by the parameter terms which is not influenced by the explanatory variables($X_1, \ldots, X_K$) in the model.Concretely, if all the partial derivatives(偏导数) of $y$ with respect to each of parameters $\beta_1, \ldots, \beta_K$ are independent of the parameters, the (1) is called as a linear model, if any of the partial derivatives of y with respect to any of the $\beta_1, \ldots, \beta_K$ is not independent of the parameters, the model is called as nonlinear.
+\par For example
+\begin{displaymath}
+  y = \beta_1 X^2_1 + \beta_2 \sqrt{X_2} + \beta_3 \log{X_3} + e
+\end{displaymath}
+is a linear model, because:
+\begin{align*}
+  \frac{\partial{y}}{\partial{\beta_1}} &= X_1 ^ 2\\
+  \frac{\partial{y}}{\partial{\beta_2}} &= \sqrt{X_2}\\
+  \frac{\partial{y}}{\partial{\beta_3}} &= \log{X_3}
+\end{align*}
+are independent of parameters $\beta_i, (i=1, 2, 3)$.(可以看到，三个偏导数都和$\beta_i$无关)\\
+On the other hand, 
+\begin{displaymath}
+  y = \beta_1^2 X_1 + \beta_2 X_2 + \beta_3 \log{X_3} + e
+\end{displaymath}
+is a nonlinear model, because:
+\begin{align*}
+  \frac{\partial{y}}{\partial{\beta_1}} &= 2\beta_1X_1\\
+  \frac{\partial{y}}{\partial{\beta_2}} &= X_2\\
+  \frac{\partial{y}}{\partial{\beta_3}} &= \log{X_3}
+\end{align*}
+we can see $\frac{\partial{y}}{\partial{\beta_1}} = 2\beta_1 X_1$ depends on $\beta_1$.(对$\beta_1$求偏导，结果与$\beta_1$相关)
+\end{document}

@@ -1,0 +1,89 @@
+\documentclass{article}
+\usepackage{amsmath}
+\begin{document}
+Euler distance model
+\begin{displaymath}
+X = \left(\frac{DX}{DA + DB + DC}\right)\times100
+\end{displaymath}
+
+\begin{displaymath}
+X = \left(1-\frac{\frac{1}{DX}}{\frac{1}{DA} + \frac{1}{DB} + \frac{1}{DC}}\right)\times100
+\end{displaymath}
+
+\begin{displaymath}
+X = \left(\frac{\frac{1}{DX}}{\frac{1}{DA} + \frac{1}{DB} + \frac{1}{DC}}\right)\times100
+\end{displaymath}
+
+Linear mixing model
+
+\begin{displaymath}
+\delta J_{D} = f_{A}\delta J_{A} + f_{B}\delta J_{B} + f_{C}\delta J_{C}
+\end{displaymath}
+\begin{displaymath}
+\delta K_{D} = f_{A}\delta K_{A} + f_{B}\delta K_{B} + f_{C}\delta K_{C}
+\end{displaymath}
+\begin{displaymath}
+1 = f_{A} + f_{B} + f_{C}
+\end{displaymath}
+
+Bayes apportion model:
+
+\begin{displaymath}
+P(f_{q}|data) = \frac{L(data|f_{q})\cdotp P(f_{q})}{\sum L(data|f_{q})\cdotp P(f_{q})}
+\end{displaymath}
+$f_{q}$: a source apportion vector,all $f_{i}$ in $f_{q}$ must sum to unity, because the sum of $f_{i}$ has to be 1\\
+$L(data|f_{q})$: the likelihood of data given $f_{q}$\\
+$p(f_{q})$: the prior probability of the source apportion based vector $f_{q}$\\
+\par This formula calculated the posterior probability of $f_{q}$ based on data and prior information.\\
+\par Our purpose is trying to estimate the contribution of i sources to a mixture which has j isotopes.The bayes model can calculate the posterior probability of $f_{q}$, if we iterate the bayes posterior formula to calculate all $f_{q}$. finally we could use the $f_{q}$ which has max  posterior probability to estimate the contribution of i sources to the mixture.\\
+\\
+\par In order to fully understand this model, we set a scene to apply the bayes apportion model.
+We wish to determine the contribution of prey items to a predator diet, so the data would be isotope signatures from individual
+predators and the preys.\\
+\par In this scene, the predator's diet may contain $n$ preys, we will use $j$ isotopes to distinguish the preys and the predator.
+We defined these parameters to describe our predators and prey isotope mixing system:\\
+\par For preys(sources), we assume the isotope value and the fraction factor to be normally distributed, the value of isotope j in source i can be described below:\\
+\begin{displaymath}
+j_{source_{i}}\sim\textbf{N}_{source_{i}}(m_{j_{source_{i}}}, s_{j_{source_{i}}})\\
+\end{displaymath}
+\begin{displaymath}
+j_{frac_{i}}\sim\textbf{N}_{frac_{i}}(m_{j_{frac_{i}}}, s_{j_{frac_{i}}})
+\end{displaymath}
+\par For the predator(mixing system), we randomly drawn value $f_{i}$ comprising a vector $f_{q}$($f_{i}$ is the source apportion for $sources_{i}$) to estimate the distribution of predator's isotope value(mixture):\\
+\begin{displaymath}
+\hat\mu _{j} = \sum _{i = 1} ^{n}\left[f_{i}\cdot\left(m_{j_{source_{i}}} + m_{j_{frac_{i}}}\right)\right]
+\end{displaymath}
+\begin{displaymath}
+\hat\sigma _{j} = \sqrt{\sum _{i = 1} ^{n}\left[f_{i}^{2}\left(s^{2}_{source_{i}} + s^{2}_{frac_{i}}\right)\right]}
+\end{displaymath}
+\par Once we have determined the $\hat\mu_{j}$ and $\hat\sigma_{j}$, the likelihood of the isotope value(the isotope value of predator) given the proposed mixture can calculated as this formula:
+
+\begin{displaymath}
+L(x | \hat\mu_{j}, \hat\sigma_{j}) = \prod\limits_ {k=1}^{n}\prod\limits_{j=1}^{n}\left[\frac{1}{\hat\sigma_{j}\sqrt{2\cdot\pi}}\cdot e^{-\frac{(x_{kj} - \hat\mu_j)^2}{2\cdot\hat\sigma^2_j}}\right]
+\end{displaymath}
+($x_{kj}$ represents the $j$th isotope of the $k$th mixture in all data)\\
+The formula above actually calculated the result of $L(data|f_{q})$, which is part of numerator in the bayes formula described in the former paragraph
+
+\par Now we have the $L(data | f_{q})$, the likelihood $f_q$ given prior information can be calculated using a beta distribution:
+\begin{displaymath}
+L(f_q | \alpha_i, \beta_i) = \prod_{i=1}^{n}\frac{f_i^{\alpha_i-1}\cdot(1-f_i)^\beta_i-1}{\textbf{B}(\alpha_i,\beta_i)}
+\end{displaymath}
+Every $sources_i$ can be described as a beta distribution, so the unity probability of $f_q$ is the multiple multiplication of all $n$ sources'beta distribution\\
+\par Finally the likelihood of $f_q$ given prior information(in this scene, the prior information is the data of predator's isotope) is multiplied by the likelihood of the mixture data give $f_q$ in order to calculate the unnormalized posterior probability of $f_q$ given priors and data:
+\begin{displaymath}
+L(data|f_{q})\cdot p(f_q) = \prod\limits_ {k=1}^{n}\prod\limits_{j=1}^{n}\left[\frac{1}{\hat\sigma_{j}\sqrt{2\cdot\pi}}\cdot e^{-\frac{(x_{kj} - \hat\mu_j)^2}{2\cdot\hat\sigma^2_j}}\right] \cdot \prod_{i=1}^{n}\frac{f_i^{\alpha_i-1}\cdot(1-f_i)^\beta_i-1}{\textbf{B}(\alpha_i,\beta_i)}
+\end{displaymath}
+\par If we performed a continually calculation of $P(f_q|data)$ for random $f_q$, finally we could obtain the probability distribution of different $f_q$.
+\par Now we summarized all the steps below:\\
+1.\qquad Calculating the $\hat\mu_j$ and $\hat\sigma_j$ of mixture, using the random $f_q$\\
+2.\qquad Calculating the likelihood of mixture given $\hat\mu_j$ and $\hat\sigma_j$, ($L(x|\hat\mu_j, \hat\sigma_j)$)\\
+3.\qquad Calculating the likelihood of random apportion vector $f_q$ given prior information($\alpha_i$ and $\beta_i$), which written as $L(f_q | \alpha_i, \beta_i)$\\
+4.\qquad Calculating the unnormalized posterior probability of $f_q$ given priors and data.($L(data|f_q)\cdot P(f_q)$)\\
+5.\qquad Calculating the posterior probability of $P(f_q|data)$ using bayes formula\\
+6.\qquad Repeating above steps for each $f_q$, finally we can obtain a probability distribution of $f_q$\\
+\\
+\begin{displaymath}
+P(H|D) = \frac{P(D|H)\cdot P(H)}{P(D)}=\frac{P(D|H)\cdot P(H)}{P(D|H)\cdot P(H) + P(D|S)\cdot P(S)}
+\end{displaymath}
+test $mg\cdot m^{-3}$
+\end{document}

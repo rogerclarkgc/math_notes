@@ -1,0 +1,106 @@
+
+\documentclass{article}
+\usepackage{amsmath}
+\begin{document}
+set
+\begin{displaymath}
+x = \begin{pmatrix}x_{1} \\ x_{2} \\ \vdots \\ x_{n+1} \end{pmatrix}
+\end{displaymath}
+
+as an input feature vector in line format. we have 4000 row input data , every observation(row) is a $(400+1)\times1$ vector, these data will be wrote as a matrix:
+
+\begin{displaymath}
+\mathbf{X} = \begin{pmatrix}
+x^{(1)T}\\ x^{(2)T} \\ \vdots \\ x^{(5000)T}
+\end{pmatrix}
+\end{displaymath}
+so, $\mathbf{X}$ is a $5000 \times (400+1)$ matrix, which means we have 5000 observations, every observation have $(400+1) \times 1$ features.(1 means we count bias unit as a feature)\\
+
+For a neural network, $\Theta$ is a weight matrix, which describe the how much a neural unit will influence next neural layer.\\
+set
+\begin{displaymath}
+\theta_{(1)} = \begin{pmatrix}
+\theta^{(1)}_{1}\\ \theta^{(1)}_{2} \\ \vdots \\ \theta^{(1)}_{n+1}
+\end{pmatrix}
+\end{displaymath}
+
+This formula above represents a $(n+1) \time 1$ $\theta$ vector, by using matrix multiplication, it will apply its weights to every single feature in one observation.\\
+
+In this example we have a 3 layer neural network, one input layer, one hidden layer and one output layer. Input layer has $400+1$ units, hidden layer has $25+1$ units, output layer has $10$ layers,so we will have tow $\Theta$ matrix.\\
+So, for $\Theta^{(1)}$, it's a $25 \times (400+1)$matrix, we have:
+\begin{displaymath}
+\Theta^{(1)} = \begin{pmatrix}
+\Theta_{1}^{(1)T} \\ \Theta_{2}^{(1)T} \\ \vdots \\ \Theta^{(1)T}_{25}
+\end{pmatrix}
+\end{displaymath}
+
+As the definition of Feedforward Propagation, for the first unite in layer 2(hidden layer) which exclude the bias unit, we write down it as $a_{1}^{(2)}$, we have this formula below:
+
+\begin{displaymath}
+a_{1}^{(2)} = g(a_{0}^{(1)}\Theta_{11}^{(1)} + a_{1}^{(1)}\Theta_{12}^{(1)}
++ \cdots + a_{401}^{(1)}\Theta_{(1,401)}^{(1)})
+\end{displaymath}
+
+It looks like a matrix multiplication, so, this formula can be displayed as matrix formation:
+\begin{displaymath}
+a_{1}^{(2)} = g(x^{(1)T}\cdot \Theta^{(1)}_{1})
+\end{displaymath}
+
+For all units in layer two, we have 25 units(exclude a bias unit), write the formula above by matrix formation:
+
+\begin{displaymath}
+\begin{pmatrix}
+a_{1}^{(2)}\\ a_{2}^{(2)} \\ \vdots \\ a_{25}^{(2)}
+\end{pmatrix}
+=
+\begin{pmatrix}
+g(x^{(1)T}\cdot \Theta^{(1)}_{1}) \\ g(x^{(1)T}\cdot \Theta^{(1)}_{2}) \\ \vdots \\ g(x^{(1)T}\cdot \Theta^{(1)}_{25})
+\end{pmatrix}
+\end{displaymath}
+
+Now, we calculate the value of layer using one observation $x^{(1)}$, but we have 5000 observations, it is not necessary to calculate all observations using loops in computer language, we could also complete it by vectorization and matrix.\\
+For All observations, we have:
+\begin{displaymath}
+\begin{split}
+  \mathbf{Z^{(2)}} = \begin{pmatrix}x^{(1)T}\\ x^{(2)T} \\ \vdots \\ x^{(5000)T}\end{pmatrix} \cdot
+  \begin{pmatrix}
+    \Theta^{(1)}_{1}&\Theta^{(1)}_{2}&\cdots&\Theta^{(1)}_{25}
+  \end{pmatrix}\\
+  =\begin{pmatrix}x^{(1)T}\\ x^{(2)T} \\ \vdots \\ x^{(5000)T}\end{pmatrix}\cdot
+  \begin{pmatrix}
+    \Theta^{(1)}_{11} & \Theta^{(1)}_{21} & \cdots &  \Theta^{(1)}_{(25,1)}\\
+    \Theta^{(1)}_{12} & \Theta^{(1)}_{22} & \cdots &  \Theta^{(1)}_{25,2}\\
+    \vdots & \vdots & \ddots & \vdots\\
+    \Theta^{(1)}_{(1,401)} & \Theta^{(1)}_{(2,401)} & \cdots &  \Theta^{(1)}_{(25,401)}
+  \end{pmatrix}
+  \\=
+  \begin{pmatrix}
+    x^{(1)T}\cdot \Theta^{(1)}_{1} & x^{(1)T}\cdot \Theta^{(1)}_{2} & \cdots & x^{(1)T}\cdot \Theta^{(1)}_{25}\\
+    x^{(2)T}\cdot \Theta^{(1)}_{1} & x^{(2)T}\cdot \Theta^{(1)}_{2} & \cdots & x^{(2)T}\cdot \Theta^{(1)}_{25}\\
+    \vdots & \vdots & \ddots &\vdots\\
+    x^{(5000)T}\cdot \Theta^{(1)}_{1} & x^{(5000)T}\cdot \Theta^{(1)}_{2} & \cdots & x^{(5000)T}\cdot \Theta^{(1)}_{25}\\
+  \end{pmatrix}
+\end{split}
+\end{displaymath}
+
+Finally, we have a big matrix $\mathbf{Z^{(2)}}$, which dimension is $5000 \times 25$, every row vector is the new feature in layer 2 after apply the weight matrix, we have 5000 new observations now.
+
+So, the last step is use sigmoid function to calculate new $A_{2}$, we have:
+\begin{displaymath}
+\begin{split}
+  \mathbf{A_{2}} = g(\mathbf{Z^{(2)}})\\
+  \vdots\\
+  \mathbf{A_{n}} = g(\mathbf{A_{n-1} \cdot \Theta^{n-1}})\\
+\end{split}
+\end{displaymath}
+
+
+
+
+
+
+
+
+
+\end{document}
+
