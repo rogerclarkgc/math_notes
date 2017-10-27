@@ -8,10 +8,10 @@
 \end{titlepage}
 \begin{document}
 \maketitle
-\section{Introduction of Linear model}
+\section{Basic concept of Linear model}
 The basic linear model is define by:
 \begin{equation}
-y = f(X_1, \ldots, X_K, \beta _1, \ldots, \beta _K)
+y = f(X_1, \ldots, X_K, \beta _1, \ldots, \beta _K) + e
 \end{equation}
 \par Where $f$ is some well defined function and $\beta_1, \ldots, \beta_K$ are the parameters which characterize the role and contribution of $X_1, \ldots, X_K$\\
 The term $e$ reflects the stochastic nature of the relationship between $y$ and $X_1, \ldots, X_K$ and indicates that such a relationship is not exact in nature.When $e=0$, then the model is called the mathematical model otherwise the statistical model.($e$ 是误差项，同随机变量组$X_1, \ldots, X_K$ 一样会影响$y$ 的结果，相当于在研究中没被考虑的变量以及系统本身的内在干扰，在模型中成为了误差项)\\
@@ -28,7 +28,7 @@ is a linear model, because:
   \frac{\partial{y}}{\partial{\beta_3}} &= \log{X_3}
 \end{align*}
 are independent of parameters $\beta_i, (i=1, 2, 3)$.(可以看到，三个偏导数都和$\beta_i$无关)\\
-On the other hand, 
+On the other hand,
 \begin{displaymath}
   y = \beta_1^2 X_1 + \beta_2 X_2 + \beta_3 \log{X_3} + e
 \end{displaymath}
@@ -39,4 +39,134 @@ is a nonlinear model, because:
   \frac{\partial{y}}{\partial{\beta_3}} &= \log{X_3}
 \end{align*}
 we can see $\frac{\partial{y}}{\partial{\beta_1}} = 2\beta_1 X_1$ depends on $\beta_1$.(对$\beta_1$求偏导，结果与$\beta_1$相关)
+\par Basically, the statistical linear modeling essential consists of developing approaches and tools to determine $\beta_1, \ldots, \beta_K$ in the linear model:
+\begin{displaymath}
+  y = \beta_1 X_1 + \ldots + \beta_K X_K + e
+\end{displaymath}
+given the observations on $y$ and $X_1, \ldots, X_K$.
+
+\par The regression analysis is a tool to determine the values of the parameters given the data on $y$ and $X_1,\ldots,X_K$. It can be broadly thought that the model exists in nature but is unknown to the experimenter, When some values to the explanatory variables($X1,\ldots,X_K$) are provided, then the values for the output($y$) or study variable are generated accordingly.
+\section{The simple Linear Regression Model}
+\subsection{The Linear Model}
+Consider a linear regression model which has only one independent(or explanatory) variable:
+\begin{equation}
+  y = \beta_0 + \beta_1 X + e
+\end{equation}
+Where $y$ is the dependent(or study) variable and $X$ is an independent variable. The $\beta_0$ and $\beta_1$ are the intercept term and slope parameter, respectively, which are usually called as regression coefficients.The unobservable error component $e$ accounts for the failure of data to lie on the straight line and represents the difference between the true and observed realizations of $y$.We assume that $e$ is observed as independent and identically distributed random variable with $\mu = 0$ and $\sigma$ is a constant.
+\par The independent variable is viewed as controlled by the experimenter, so it is considered as non-stochastic whereas $y$ is viewed as a random variable with:
+\begin{align*}
+  &\textrm{E}(y) = \beta_0 + \beta_1 X\\
+  &\textrm{var}(y) = \sigma ^2
+\end{align*}
+Actually, $X$ can also be a random variable, we consider conditional mean of y and conditional variance of y when given $X=x$ as:
+\begin{align*}
+  &\textrm{E(y$\mid$x)} = \beta_0 + \beta_1 x\\
+  &\textrm{var(y$\mid$x)} = \sigma ^2
+\end{align*}
+ \par Now, Only $T$ pairs of observations $(x_t, y_t)(t=1, \ldots, T)$ on $(X, y)$ are observed which are used to determine the unknown parameters $\beta_0, \beta_1, \sigma^2$
+ (已知t对观测数据，我们的任务就是估计$\beta_0, \beta_1, \sigma^2$的值)
+
+\subsection{Least Squares Estimation}
+Least Squares Estimation(最小二乘估计) aims estimating $\beta_0$ and $\beta_1$ so that the sum of squares of difference between the observations and the line in the scatter diagrams is minimum.
+\par According to different perspectives, there are four methods: \textbf{direct regression method}, \textbf{reverse regression method}, \textbf{major axis regression method}(or orthogonal regression method) and \textbf{reduced major axis method}.Both method 's goal is found the minimum value of sum of squares of difference between observations and the regression line(or regression model).\\
+For \textbf{direct regression method}, we consider:
+\begin{align*}
+  &y_t = \beta_0 + \beta_1 x_t + e_t \qquad(t = 1, \ldots, T) \\
+  &\textmd{(is natural model in experiment)}\\
+  &Y_t = \hat{\beta_0} + \hat{\beta_1} X_t \qquad(t = 1, \ldots, T) \\
+  &\textmd{(is the model we finally estimated)}\\
+  &S(\hat{\beta_0}, \hat{\beta_1}) = \sum_{t=1}^{T}e_t^2 = \sum_{t=1}^{T}(y_t - Y_t) = \sum_{t=1}^{T}(y_t - \hat{\beta_0} - \hat{\beta_1}x_t)^2\\
+  &\rightarrow minimize(S(\hat{\beta_0}, \hat{\beta_1}))
+\end{align*}
+\par Among them the direct regression approach is more popular. Generally, the direct regression estimates are referred as the least squares estimates.
+\subsection{Direct Regression Method}
+\par The direct regression approach minimizes the sum of squares:
+\begin{align}
+  S(\beta_0, \beta_1) = \sum_{t=1}^T e_t^2 = \sum_{t=1}^T (y_t - \beta_0 - \beta_1 x_1)^2
+\end{align}
+In order to find $\beta_0$ and $\beta_1$ to minimize the $S$, we can let partial derivatives with respect to $\beta_1$ and $\beta_0$ equal to zero:
+\begin{align}
+  &\frac{\partial{S(\beta_0 ,\beta_1)}}{\partial{\beta_0}} = -2 \sum_{t=1}^{T} (y_t - \beta_0 - \beta_1 x_t) = 0\\
+  &\frac{\partial{S(\beta_0 ,\beta_1)}}{\partial{\beta_1}} = -2 \sum_{t=1}^{T} (y_t - \beta_0 - \beta_1 x_t)x_t = 0
+\end{align}
+respectively, The solution of eq(4) and eq(5) are called the direct regression estimators, or usually called as Ordinary Least Squares(OLS) estimators of $\beta_0$ and $\beta_1$.
+\par This gives the \textbf{OLS estimates} $b_0$ of $\beta_0$ and $b_1$ of $\beta_1$ as:
+\begin{align}
+  &b_0 = \bar{y} - b_1 \bar{x}\\
+  &b_1 = \frac{SXY}{SXX}
+\end{align}
+where $SXY = \frac{1}{T}\sum_{t=1}{T}(x_t - \bar{x})(y_t - \bar{y})$, $SXX = \frac{1}{T}\sum_{t=1}{T}(x_t - \bar{x})^2$.
+Further, using eq(4) and eq(5), we can get the Hessian matrix which is the matrix of second order partial derivatives as:
+\begin{equation}
+\begin{split}
+  H &=\begin{pmatrix}
+    \frac{\partial ^2 S(\beta_0, \beta_1)}{\partial \beta_0^2} & \frac{\partial ^2 S(\beta_0, \beta_1)}{\partial \beta_0 \partial \beta_1} \\
+    \frac{\partial ^2 S(\beta_0, \beta_1)}{\partial \beta_0 \partial \beta_1} & \frac{\partial ^2 S(\beta_0, \beta_1)}{\partial \beta_1^2}
+  \end{pmatrix}\\
+  &= 2 \begin{pmatrix}
+    T & T\bar{x} \\
+    T\bar{x} & \sum_{t=1}^{T} x_{t}^{2}
+  \end{pmatrix}
+\end{split}
+\end{equation}
+Then, the determinant(行列式) of $H$ is:
+\begin{equation}
+  |H| = 2T\sum_{t=1}{T}(x_t - \bar{x}) ^ 2 \geq 0
+\end{equation}
+When $|H|=0$ is not suitable for linear model because then all the observations are identical. It is means that there is no relationship between $x$ and $y$ in the context of regression analysis. Basically, we thought $|H|$ is always bigger than zero. Therefore $H$ is a positive definite matrix for any $(\beta_0, \beta_1)$; that means $S(\beta_0, \beta_1)$ always has a global minimum at $(b_0, b_1)$.
+\par The fitted line or the fitted linear regression models is(可以理解成真实的模型)
+\begin{equation}
+  y = b_0 + b_1 X
+\end{equation}
+and the predicted values are（这是我们通过回归分析得到的模型）
+\begin{equation}
+  \hat{y_t} = b_0 + b_1 x_t \quad (t = 1, \ldots, T)
+\end{equation}
+The difference between the observed value $y_t$ and the predicted value $\hat{y_t}$ is called as \textbf{residual}, The $t^th$ residual is :
+\begin{equation}
+  \begin{split}
+    \hat{\epsilon_t} &= y_t - \hat{y_t} \quad (t=1, \ldots, T)\\
+                     &= y_t - (b_0 + b_1 x_t)
+  \end{split}
+\end{equation}
+\subsection{Properties of the direct regression estimators}
+\par Using formula (6) and (7), we have:
+\begin{equation}
+\begin{split}
+  \textbf{E}(b_1) &= \sum_{t=1}^{T} k_t \textbf{E}(y_t) = \sum_{t=1}^{T} k_t (\beta_0+\beta_1 x_t)\\
+  &=\beta_1
+\end{split}
+\end{equation}
+Similarly, 
+\begin{equation}
+  \textbf{E}(b_0) = \beta_0
+\end{equation}
+Thus \textbf{$b_0$ and $b_1$ are unbiased estimators of $\beta_0$ and $\beta_1$}.
+\par The variance of $b_1$ is:
+\begin{equation}
+  \begin{split}
+    \textmd{var}(b1) &= \sum_{t=1}^T k_t^2 \textmd{var}(y_t) + \sum_t \sum_{t^* \neq t} k_tk_{t^*} \textmd{cov}(y_t, y_{t^*})\\
+            &= \sigma^2 \sum_t^T k_t^2\\
+            &= \frac{\sigma^2}{SXX}
+  \end{split}
+\end{equation}
+Similarly, the variance of $b_0$ is:
+\begin{equation}
+\begin{split}
+  \textmd{var}(b_0) &= \textmd{var}(\bar{y}) + \bar{x}^2\textmd{var}(b_1) - 2\bar{x}\textmd{cov}(\bar{y}, b_1)\\
+           &= \sigma^2\left(\frac{1}{T} + \frac{\bar{x}^2}{SXX}\right)
+\end{split}
+\end{equation}
+Finally, the covariance between $b_0$ and $b_1$ is:
+\begin{equation}
+  \begin{split}
+    \textmd{cov}(b_0, b_1) &= \textmd{cov}(\bar{y}, b_1) - \bar{x}\textmd{var}(b_1)\\
+                  &= -\frac{\sigma^2\bar{x}}{SXX}
+  \end{split}
+\end{equation}
+\par It can further be shown that the ordinary least squares estimators $b_0$ and $b_1$ possess the minimum variance in the class of linear and unbiased estimators.So they are termed as the \textbf{Best Linear Unbiased Estimators(BLUE)}.
+(OLS方法得出的$b_0$和$b_1$是具有最小方差的无偏估计量)
+\par Further, note that $\sum_{t=1}^{T}x_t\hat{\epsilon_t}=0$, $\sum_{t=1}^{T}\hat{y_t}\hat{\epsilon_t}=0$, $\sum_{t=1}^{T}y_t=\sum_{t=1}^{T}\hat{y_t}$ and the fitted line always passes through $(\bar{x}, \bar{y})$.
+\subsection{Testing of Hypotheses and Confidence Interval Estimation}
+
 \end{document}
