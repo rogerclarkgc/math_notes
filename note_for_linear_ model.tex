@@ -1,6 +1,7 @@
 \documentclass{article}
 \usepackage{amsmath}
 \usepackage{ctex}
+\usepackage{pgfplots}
 \begin{titlepage}
 \author{rogerclark}
 \date{2017.10.23}
@@ -137,7 +138,7 @@ The difference between the observed value $y_t$ and the predicted value $\hat{y_
   &=\beta_1
 \end{split}
 \end{equation}
-Similarly, 
+Similarly,
 \begin{equation}
   \textbf{E}(b_0) = \beta_0
 \end{equation}
@@ -168,5 +169,201 @@ Finally, the covariance between $b_0$ and $b_1$ is:
 (OLS方法得出的$b_0$和$b_1$是具有最小方差的无偏估计量)
 \par Further, note that $\sum_{t=1}^{T}x_t\hat{\epsilon_t}=0$, $\sum_{t=1}^{T}\hat{y_t}\hat{\epsilon_t}=0$, $\sum_{t=1}^{T}y_t=\sum_{t=1}^{T}\hat{y_t}$ and the fitted line always passes through $(\bar{x}, \bar{y})$.
 \subsection{Testing of Hypotheses and Confidence Interval Estimation}
-
+\par For the simple linear regression model under the assumption that $\epsilon_t$'s are independent and identically distributed with $N(0, \sigma^2)$.
+\par We set a null hypothesis related to the slope parameter $\beta_1$:
+\begin{displaymath}
+  H_0 : \beta_1 = \beta_{10}
+\end{displaymath}
+where $\beta_{10}$ is some given constant.
+\par Assuming $\sigma^2$ to be known, we have:
+\begin{equation}
+  b_1 \sim N(\beta, \frac{\sigma^2}{SXX})
+\end{equation}
+So $b_1$ is a random variable which has normal distribution and it's easy to conclude the statistic parameter $Z$ has:
+\begin{equation}
+  Z_{01} = \frac{b_1 - \beta_{10}}{\sqrt{\frac{\sigma^2}{SXX}}} \sim N(0, 1)
+\end{equation}
+when null hypothesis $H_0$ is \textbf{TRUE}
+(零假设为斜率为已知常数，我们已知$b_1$的分布是正态分布，如果零假设是真实的，那么$b_1$可以归一化成具有标准正态分布统计量$Z$)\\
+\\
+%distribution for b1
+%image start
+\begin{tikzpicture}
+\begin{axis}[xmin=-4, xmax=22, title=the distribution of $b_1$, small]
+\newcommand \MU{4}
+\newcommand \SIGMA{1}
+\addplot[red, domain=-5:20,samples=100]{exp(-(x-\MU)^2 /2/\SIGMA^2)/(\SIGMA * sqrt(2*pi))};
+\draw[help lines](axis cs:\MU,0)--(axis cs:\MU,1);
+\end{axis}
+\end{tikzpicture}
+%image end
+%distribution of z01
+%image start
+\begin{tikzpicture}
+\begin{axis}[xmin=-6, xmax=6, title=the distribution of $Z$, small]
+\newcommand \MU{0}
+\newcommand \SIGMA{1}
+\addplot[red, domain=-7:7,samples=100]{exp(-(x-\MU)^2 /2/\SIGMA^2)/(\SIGMA * sqrt(2*pi))};
+\draw[help lines](axis cs:\MU,0)--(axis cs:\MU,1);
+\end{axis}
+\end{tikzpicture}
+%image end
+\par The $100(1-\alpha)\%$ confidence interval for $\beta_1$ can be obtained from equation(19):
+\begin{equation}
+  b_1 \pm z_{1-\frac{\alpha}{2}}\sqrt{\frac{\sigma^2}{SXX}}
+\end{equation}
+where $z_{1-\alpha /2}$ is the $(1-\alpha /2)$ percentage point of the $N(0, 1)$ distribution\\
+%the image of confidence interval
+%image start
+\\
+\begin{tikzpicture}
+\begin{axis}[xmin=-6, xmax=6, title=the $100(1-\alpha)\%$ confidence interval for $\beta_1$]
+\newcommand \MU{0}
+\newcommand \SIGMA{1}
+\newcommand \ALPHA{4.65}
+\addplot[red, domain=-7:7,samples=100]{exp(-(x-\MU)^2 /2/\SIGMA^2)/(\SIGMA * sqrt(2*pi))};
+\draw[help lines](axis cs:\MU,-0.1)--(axis cs:\MU,1);
+\draw[help lines](axis cs:-\ALPHA, -0.1)--(axis cs:-\ALPHA, 0);
+\draw[help lines](axis cs:\ALPHA, -0.1)--(axis cs:\ALPHA, 0);
+\end{axis}
+\end{tikzpicture}
+%image end
+\\
+(通过统计量Z的分布，我们可以得到$\beta_1$的$100(1-\alpha)\%$)置信区间，如上图所示，它等价于两个$\alpha /2$分位数所包围的概率区间所对应的$x$轴区间)
+\par Usually, we don't know $\sigma^2$ of $b_1$, then we proceed as follows.We know:
+\begin{displaymath}
+  E(\frac{RSS}{T-2}) = \sigma^2
+\end{displaymath}
+(OSS方法中方差的无偏估计量的期望是实际方差)
+and we can find:
+\begin{displaymath}
+  \frac{RSS}{\sigma^2} \sim \chi^2_{T-2}
+\end{displaymath}
+Further, $RSS/\sigma^2$ and $b_1$ are independently distributed, so the statistic t has:
+\begin{equation}
+  \begin{split}
+    t_{01} &= \frac{b_1 - \beta_{10}}{\sqrt{\frac{\hat{\sigma^2}}{SXX}}}\\
+           & = \frac{b1 - \beta_{10}}{\sqrt{\frac{RSS}{(T-2)SXX}}} \sim t_{T-2}
+  \end{split}
+\end{equation}
+when $H_0$ is true\\
+($b_1$可以归一化成一个具有t分布的统计量)
+\par The corresponding $100(1-\alpha)\%$ confidence interval of $\beta_1$ can be obtained from eq(21) as :
+\begin{equation}
+  b_1 \pm t_{T-2,1-\alpha/2} \sqrt{\frac{RSS}{(T-2)SXX}}
+\end{equation}
+\par Then, we can use confidence interval to decide the null hypothesis $H_0$ is \textbf{TRUE} or \textbf{FALSE}.
+Basically, a decision rule to test $H_0$ can be frame from eq(19) or eq(21) under the condition when $\sigma^2$ is known or unknown.\\
+When $sigma^2$ is \textbf{unknown}, the decision rule is to \textbf{reject} $H_0$ if :
+\begin{displaymath}
+  |t_{01}| > t_{T-2, 1-\alpha/2}
+\end{displaymath}
+then, the decision rule is to \textbf{accept} $H_0$ if:
+\begin{displaymath}
+ |t_{01}| < t_{T-2, 1-\alpha/2}
+\end{displaymath}
+where $t_{T-2, 1-\alpha/2}$ is the $1-\alpha/2$ percentage point of the $t$-distribution whith $(T-2)$ degree of freedom.\\
+When $sigma^2$ is \textbf{known}, the decision rule is to \textbf{reject} $H_0$ if :
+\begin{displaymath}
+  |z_{01}| > z_{1-\alpha / 2}
+\end{displaymath}
+then, the decision rule is to \textbf{accept} $H_0$ if:
+\begin{displaymath}
+  |z_{01}| < z_{1-\alpha/2}
+\end{displaymath}
+where $z_{1-\alpha / 2}$ is the $1-\alpha / 2$ percentage point of the normal distribution.\\
+(假设检验就是看相关统计量是否落在对应的$(1-\alpha/2)$分位数点区间内，如果在区间外，那么则拒绝该假设下的统计量，反之则接受该假设下的统计量。换成$b_1$就变成了看是否落在我们计算出的置信区间内。
+对于方差已知的情况，统计量符合正态分布，方差未知则符合$t$分布)
+\par A similar test statistic and test procedure can be developed for testing the hypothesis related to the intercept term $\beta_0$:
+\begin{displaymath}
+  H_0 : \beta_0 = \beta_{00}
+\end{displaymath}
+\par When $\sigma^2$ is \textbf{known}, then the $100(1-\alpha)\%$ confidence intervals for $\beta_0$ is:
+\begin{equation}
+  b_0 \pm z_{1-\alpha / 2}\sqrt{\sigma^2 \left(\frac{1}{T} + \frac{\hat{x}}{SXX}\right)}
+\end{equation}
+when $\sigma^2$ is \textbf{unknown}, then the $100(1-\alpha)\%$ confidence intervals for $\beta_0$ is:
+\begin{equation}
+  b_0 \pm t_{T-2, 1-\alpha / 2}\sqrt{\frac{RSS}{T-2}\left(\frac{1}{T} + \frac{\hat{x}}{SXX}\right)}
+\end{equation}
+\par A confidence interval for $\sigma^2$ can also be derived as follows. Since $RSS/\sigma^2 \sim \chi^2_{T-2}$, thus
+\begin{equation}
+  P\left[\chi ^2 _{T-2, \alpha/2} \leq \frac{RSS}{\sigma^2} \leq \chi ^2 _{T-2, 1 - \alpha/2}  \right] = 1 - \alpha
+\end{equation}
+The corresponding $100(1-\alpha)\%$ confidence interval for $\sigma^2$ is:
+\begin{equation}
+  \frac{RSS}{\chi^2_{T-2, 1-\alpha/2}} \leq \sigma^2 \leq \frac{RSS}{\chi^2_{T-2, \alpha/2}}
+\end{equation}
+\subsection{Analysis of Variance}
+A test statistic for testting $H_0: \beta_1 = 0$ can also be formulated using the analysis of variance technique as follows.
+\par on the basis of the identity:
+\begin{displaymath}
+  y_t - \bar{y_t} = (y_t - \bar{y}) - (\hat{y_t} - \bar{y})
+\end{displaymath}
+then, the sum of squared residuals is:
+\begin{equation}
+  \begin{split}
+    S(b) &= \sum_{t=1}^T (y_t - \hat{y_t})^2\\
+         &= \sum_{t=1}^T (y_t - \bar{y_t})^2 + \sum_{t=1}^T (\hat{y_t} - \bar{y})^2 - 2\sum_{t=1}^T(y_t - \bar{y})(\hat{y_t} - \bar{y}) 
+  \end{split}
+\end{equation}
+Finally we have:
+\begin{equation}
+  \sum_{t=1}^T (y_t - \bar{y})^2 = \sum_{t=1}^T (y_t - \hat{y_t})^2 + \sum_{t=1}^T(\hat{y_t} - \bar{y})^2
+\end{equation}
+The left hand side of eq(28) is called the sum of squares about the mean or corrected sum of squares of $y$ or $SYY$.\\ 
+The first term on right hand side is the \textbf{residual sum of squares}, $i.e$: \textbf{RSS}:
+\begin{equation}
+  SS Residual: RSS = \sum_{t=1}^T (y_t - \hat{y_t})^2.
+\end{equation}
+The second term on right hand side describe the proportion of variability explained by regression:
+\begin{equation}
+  SS Regression: SS_{Reg} = \sum_{t=1}^T (\hat{y_t} - \bar{y})^2
+\end{equation}
+(式(28)表示了SYY的组成，它由残差平方和($RSS$)和回归项与均值之差平方和($SS_{Reg}$))组成)\\
+Furthermore, we can define mean square due to regression and mean square due to residual:
+\begin{equation}
+  MS_{Reg} = \frac{SS_{Reg}}{1}
+\end{equation}
+\begin{equation}
+  MSE = \frac{RSS}{T-2}
+\end{equation}
+\par The test statistic for testing $H_0:\beta_1 = 0$ is:
+\begin{equation}
+  F_0 = \frac{MS_{Reg}}{MSE}
+\end{equation}
+If $H_0 : \beta_1 = 0$ is \textbf{TRUE}, then the $MS_{Reg}$ and $MSE$ are \textbf{independently distributed}, and
+\begin{displaymath}
+  F_0 \sim F_{1, T-2}.
+\end{displaymath}
+(当$\beta_1 = 0$成立时，线性模型变为$y = \beta_0$， 此时可以认为回归解释真实值变异性部分$MS_{Reg}$和描述回归结果和真实值之差异的残差平方和即$MSE$之间是独立的关系)\\
+The decision rule for $H_1:\beta_1 \neq 0$ is to reject $H_0$ if
+\begin{displaymath}
+  F_0 > F_{1, T-2;1-\alpha}
+\end{displaymath}
+at $(1-\alpha)\%$ significance.
+The sample correlation coefficient then may be written as:
+\begin{equation}
+  r_{xy} = \frac{SXY}{\sqrt{SXX}\sqrt{SYYP}}
+\end{equation}
+\subsection{Goodness of Fit of Regression}
+It is very clear that a good fitted model is obtained when residuals are small.So a measure of quality of model can be obtained with $RSS$.
+When intercept term is present in the model, a measure of goodness of fit is given by:
+\begin{equation}
+\begin{split}
+  R^2 &= 1 - \frac{RSS}{SYY}\\
+      &= \frac{SS_{Reg}}{SYY}
+\end{split}
+\end{equation}
+On the other hand, the ratio $RSS/SYY$ describes the proportion of variability that is not covered by the regression
+(可以看到R平方和实际就是回归值解释真实值变异性占据$SYY$的比例)\\
+\par It can be seem that:
+\begin{displaymath}
+  R^2 = r^2_{xy}
+\end{displaymath}
+\par It may be noted that when $\beta_0 = 0$, the regression line passes through origin, then the $R^2$ can not be used to judge the goodness of fitted model.
+In such a case, a possible measure of goodness of fit can be defined as:
+\begin{equation}
+  R_0^2 = 1 - \frac{\sum_{t=1}^T \hat{\epsilon _t^2}}{\sum_{t=1}^T y_t^2}
+\end{equation}
 \end{document}
