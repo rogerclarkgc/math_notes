@@ -2,6 +2,8 @@
 \usepackage{amsmath}
 \usepackage{ctex}
 \usepackage{pgfplots}
+\usepackage{enumerate}
+\usepackage{amssymb}
 \begin{titlepage}
 \author{rogerclark}
 \date{2017.10.23}
@@ -9,6 +11,7 @@
 \end{titlepage}
 \begin{document}
 \maketitle
+\numberwithin{equation}{section}
 \section{Basic concept of Linear model}
 The basic linear model is define by:
 \begin{equation}
@@ -17,7 +20,7 @@ y = f(X_1, \ldots, X_K, \beta _1, \ldots, \beta _K) + e
 \par Where $f$ is some well defined function and $\beta_1, \ldots, \beta_K$ are the parameters which characterize the role and contribution of $X_1, \ldots, X_K$\\
 The term $e$ reflects the stochastic nature of the relationship between $y$ and $X_1, \ldots, X_K$ and indicates that such a relationship is not exact in nature.When $e=0$, then the model is called the mathematical model otherwise the statistical model.($e$ 是误差项，同随机变量组$X_1, \ldots, X_K$ 一样会影响$y$ 的结果，相当于在研究中没被考虑的变量以及系统本身的内在干扰，在模型中成为了误差项)\\
 \\
-PAY ATTENTION:The `linear` relationship of linear model is described by the parameter terms which is not influenced by the explanatory variables($X_1, \ldots, X_K$) in the model.Concretely, if all the partial derivatives(偏导数) of $y$ with respect to each of parameters $\beta_1, \ldots, \beta_K$ are independent of the parameters, the (1) is called as a linear model, if any of the partial derivatives of y with respect to any of the $\beta_1, \ldots, \beta_K$ is not independent of the parameters, the model is called as nonlinear.
+PAY ATTENTION:The `linear` relationship of linear model is described by the parameter terms which is not influenced by the explanatory variables($X_1, \ldots, X_K$) in the model.Concretely, if all the partial derivatives(偏导数) of $y$ with respect to each of parameters $\beta_1, \ldots, \beta_K$ are independent of the parameters, the eq(1.1) is called as a linear model, if any of the partial derivatives of y with respect to any of the $\beta_1, \ldots, \beta_K$ is not independent of the parameters, the model is called as nonlinear.
 \par For example
 \begin{displaymath}
   y = \beta_1 X^2_1 + \beta_2 \sqrt{X_2} + \beta_3 \log{X_3} + e
@@ -47,6 +50,7 @@ we can see $\frac{\partial{y}}{\partial{\beta_1}} = 2\beta_1 X_1$ depends on $\b
 given the observations on $y$ and $X_1, \ldots, X_K$.
 
 \par The regression analysis is a tool to determine the values of the parameters given the data on $y$ and $X_1,\ldots,X_K$. It can be broadly thought that the model exists in nature but is unknown to the experimenter, When some values to the explanatory variables($X1,\ldots,X_K$) are provided, then the values for the output($y$) or study variable are generated accordingly.
+\\
 \section{The simple Linear Regression Model}
 \subsection{The Linear Model}
 Consider a linear regression model which has only one independent(or explanatory) variable:
@@ -90,14 +94,14 @@ In order to find $\beta_0$ and $\beta_1$ to minimize the $S$, we can let partial
   &\frac{\partial{S(\beta_0 ,\beta_1)}}{\partial{\beta_0}} = -2 \sum_{t=1}^{T} (y_t - \beta_0 - \beta_1 x_t) = 0\\
   &\frac{\partial{S(\beta_0 ,\beta_1)}}{\partial{\beta_1}} = -2 \sum_{t=1}^{T} (y_t - \beta_0 - \beta_1 x_t)x_t = 0
 \end{align}
-respectively, The solution of eq(4) and eq(5) are called the direct regression estimators, or usually called as Ordinary Least Squares(OLS) estimators of $\beta_0$ and $\beta_1$.
+respectively, The solution of eq(2.3) and eq(2.4) are called the direct regression estimators, or usually called as Ordinary Least Squares(OLS) estimators of $\beta_0$ and $\beta_1$.
 \par This gives the \textbf{OLS estimates} $b_0$ of $\beta_0$ and $b_1$ of $\beta_1$ as:
 \begin{align}
   &b_0 = \bar{y} - b_1 \bar{x}\\
   &b_1 = \frac{SXY}{SXX}
 \end{align}
 where $SXY = \frac{1}{T}\sum_{t=1}{T}(x_t - \bar{x})(y_t - \bar{y})$, $SXX = \frac{1}{T}\sum_{t=1}{T}(x_t - \bar{x})^2$.
-Further, using eq(4) and eq(5), we can get the Hessian matrix which is the matrix of second order partial derivatives as:
+Further, using eq(2.3) and eq(2.4), we can get the Hessian matrix which is the matrix of second order partial derivatives as:
 \begin{equation}
 \begin{split}
   H &=\begin{pmatrix}
@@ -131,7 +135,7 @@ The difference between the observed value $y_t$ and the predicted value $\hat{y_
   \end{split}
 \end{equation}
 \subsection{Properties of the direct regression estimators}
-\par Using formula (6) and (7), we have:
+\par Using formula (2.5) and (2.6), we have:
 \begin{equation}
 \begin{split}
   \textbf{E}(b_1) &= \sum_{t=1}^{T} k_t \textbf{E}(y_t) = \sum_{t=1}^{T} k_t (\beta_0+\beta_1 x_t)\\
@@ -208,7 +212,7 @@ when null hypothesis $H_0$ is \textbf{TRUE}
 \end{axis}
 \end{tikzpicture}
 %image end
-\par The $100(1-\alpha)\%$ confidence interval for $\beta_1$ can be obtained from equation(19):
+\par The $100(1-\alpha)\%$ confidence interval for $\beta_1$ can be obtained from equation(2.18):
 \begin{equation}
   b_1 \pm z_{1-\frac{\alpha}{2}}\sqrt{\frac{\sigma^2}{SXX}}
 \end{equation}
@@ -248,13 +252,13 @@ Further, $RSS/\sigma^2$ and $b_1$ are independently distributed, so the statisti
 \end{equation}
 when $H_0$ is true\\
 ($b_1$可以归一化成一个具有t分布的统计量)
-\par The corresponding $100(1-\alpha)\%$ confidence interval of $\beta_1$ can be obtained from eq(21) as :
+\par The corresponding $100(1-\alpha)\%$ confidence interval of $\beta_1$ can be obtained from eq(2.20) as :
 \begin{equation}
   b_1 \pm t_{T-2,1-\alpha/2} \sqrt{\frac{RSS}{(T-2)SXX}}
 \end{equation}
 \par Then, we can use confidence interval to decide the null hypothesis $H_0$ is \textbf{TRUE} or \textbf{FALSE}.
-Basically, a decision rule to test $H_0$ can be frame from eq(19) or eq(21) under the condition when $\sigma^2$ is known or unknown.\\
-When $sigma^2$ is \textbf{unknown}, the decision rule is to \textbf{reject} $H_0$ if :
+Basically, a decision rule to test $H_0$ can be frame from eq(2.18) or eq(2.20) under the condition when $\sigma^2$ is known or unknown.\\
+When $\sigma^2$ is \textbf{unknown}, the decision rule is to \textbf{reject} $H_0$ if :
 \begin{displaymath}
   |t_{01}| > t_{T-2, 1-\alpha/2}
 \end{displaymath}
@@ -295,7 +299,7 @@ The corresponding $100(1-\alpha)\%$ confidence interval for $\sigma^2$ is:
   \frac{RSS}{\chi^2_{T-2, 1-\alpha/2}} \leq \sigma^2 \leq \frac{RSS}{\chi^2_{T-2, \alpha/2}}
 \end{equation}
 \subsection{Analysis of Variance}
-A test statistic for testting $H_0: \beta_1 = 0$ can also be formulated using the analysis of variance technique as follows.
+A test statistic for testing $H_0: \beta_1 = 0$ can also be formulated using the analysis of variance technique as follows.
 \par on the basis of the identity:
 \begin{displaymath}
   y_t - \bar{y_t} = (y_t - \bar{y}) - (\hat{y_t} - \bar{y})
@@ -304,23 +308,23 @@ then, the sum of squared residuals is:
 \begin{equation}
   \begin{split}
     S(b) &= \sum_{t=1}^T (y_t - \hat{y_t})^2\\
-         &= \sum_{t=1}^T (y_t - \bar{y_t})^2 + \sum_{t=1}^T (\hat{y_t} - \bar{y})^2 - 2\sum_{t=1}^T(y_t - \bar{y})(\hat{y_t} - \bar{y}) 
+         &= \sum_{t=1}^T (y_t - \bar{y_t})^2 + \sum_{t=1}^T (\hat{y_t} - \bar{y})^2 - 2\sum_{t=1}^T(y_t - \bar{y})(\hat{y_t} - \bar{y})
   \end{split}
 \end{equation}
 Finally we have:
 \begin{equation}
   \sum_{t=1}^T (y_t - \bar{y})^2 = \sum_{t=1}^T (y_t - \hat{y_t})^2 + \sum_{t=1}^T(\hat{y_t} - \bar{y})^2
 \end{equation}
-The left hand side of eq(28) is called the sum of squares about the mean or corrected sum of squares of $y$ or $SYY$.\\ 
+The left hand side of eq(2.27) is called the sum of squares about the mean or corrected sum of squares of $y$ or $SYY$.\\
 The first term on right hand side is the \textbf{residual sum of squares}, $i.e$: \textbf{RSS}:
 \begin{equation}
-  SS Residual: RSS = \sum_{t=1}^T (y_t - \hat{y_t})^2.
+  SS\ Residual: RSS = \sum_{t=1}^T (y_t - \hat{y_t})^2.
 \end{equation}
 The second term on right hand side describe the proportion of variability explained by regression:
 \begin{equation}
-  SS Regression: SS_{Reg} = \sum_{t=1}^T (\hat{y_t} - \bar{y})^2
+  SS\ Regression: SS_{Reg} = \sum_{t=1}^T (\hat{y_t} - \bar{y})^2
 \end{equation}
-(式(28)表示了SYY的组成，它由残差平方和($RSS$)和回归项与均值之差平方和($SS_{Reg}$))组成)\\
+(式(2.27)表示了SYY的组成，它由残差平方和($RSS$)和回归项与均值之差平方和($SS_{Reg}$))组成)\\
 Furthermore, we can define mean square due to regression and mean square due to residual:
 \begin{equation}
   MS_{Reg} = \frac{SS_{Reg}}{1}
@@ -366,4 +370,133 @@ In such a case, a possible measure of goodness of fit can be defined as:
 \begin{equation}
   R_0^2 = 1 - \frac{\sum_{t=1}^T \hat{\epsilon _t^2}}{\sum_{t=1}^T y_t^2}
 \end{equation}
+\\
+\section{The Multiple Linear Regression Model and its Extensions}
+The main topic of this chapter is the linear regression model with more than one independent variables. The principles of \textbf{least squares} and \textbf{maximum likelihood}
+are used for the estimation of parameters.
+\subsection{The linear Model}
+We write:
+\begin{equation}
+  y = X_1 \beta_1 + \ldots + X_K \beta_K + e
+\end{equation}
+This is called as the multiple linear regression model. The parameters $\beta_1, \ldots, \beta_K$ are the regression coefficients associated with $X_1, \ldots, X_K$.
+\par We have $T$ sets of observations on $y$ and $(X_1, \ldots, X_K)$, which we represents as follows:
+\begin{equation}
+  (y, X) = \begin{pmatrix}
+    y_1 & x_{11} & \cdots & x_{K1}\\
+    \vdots & \vdots & \ddots & \vdots\\
+    y_T & x_{1T} & \cdots & x_{KT}
+  \end{pmatrix}
+  = (y, x_{(1)}, \ldots, x_{(K)})
+  = \begin{pmatrix}
+    y_1, x^{'}_1\\
+    \vdots\\
+    y_T, x^{'}_T
+  \end{pmatrix}
+\end{equation}
+where $y = (y_1, \ldots, y_T)^{'}$ is a $T$-vector, $x_i = (x_{1i}, \ldots, x_{Ki})^{'}$ is a $K$-vector and $x_{(j)}=(x_{j1}, \ldots, x_{jT})^{'}$ is a $T$-vector.
+\par So, there are $T$ observational equations of the form (3.1):
+\begin{equation}
+\begin{split}
+  y_t &= x^{'}_t \beta + e_t\\
+      &= \left(x_{1t} \cdots x_{Kt}\right) \begin{pmatrix}
+        \beta_1\\
+        \vdots\\
+        \beta_K
+      \end{pmatrix} + e_t \quad t=1,\ldots, T
+\end{split}
+\end{equation}
+which can be written using matrix notation.
+\begin{equation}
+\begin{split}
+  y &= X \beta + e\\
+    &= \begin{pmatrix}
+      x_{11} & \cdots & x_{K1}\\
+      \vdots & \ddots & \vdots\\
+      x_{1T} & \cdots & x_{KT}
+    \end{pmatrix}
+    \begin{pmatrix}
+      \beta_1\\
+      \vdots\\
+      \beta_K
+    \end{pmatrix} +
+    \begin{pmatrix}
+      e_1\\
+      \vdots\\
+      e_T
+    \end{pmatrix}
+\end{split}
+\end{equation}
+where $X$ is $T \times K$ design matrix of $T$ observations on each of the $K$ explanatory variables.
+\par We consider the problems of estimation and testing of hypotheses on $\beta$ under some assumptions.
+A general procedure for estimation of $\beta$ is minimize:
+\begin{equation}
+  \sum_{t=1}^T M(e_t) = \sum_{t=1}^T M(y - x_t^{'}\beta)
+\end{equation}
+for a suitably chosen function $M$, some examples of which are $M(x) = |x|$ and $M(x) = x^2$ and more generally, $M(x) = |x|^p$.\\
+($M(x)$可以理解成优化函数，OLS中最常用的就是$M(x)=x^2$)
+\subsection{Assumptions in Multiple Linear Regression Model}
+We assume that $e$ is observed as a random variable $\epsilon$ with following assumptions:
+\begin{enumerate}[(\romannumeral1)]
+  \item $E(\epsilon)=0$,
+  \item $E(\epsilon \epsilon^{'})=\sigma^2 I_T$,
+  \item $\textrm{Rank}(X)=K$,
+  \item $X$ is a non-stochastic matrix
+  \item $\epsilon \sim N(0, \sigma^2 I_T)$\\
+  The following assumption is required to study particularly the large sample properties of the estimators:
+  \item $\textmd{lim}_{T\rightarrow \infty}(X_{'}X/T) = \Delta$ exists and is a non-stochastic and non-singular matrix(with finite elements)
+\end{enumerate}
+\subsection{The Principle of Ordinary Least Squares (OLS)}
+Our object is to find a vector $b^{'}=(b_1, \ldots, b_K)$ from $B = \mathbb{R} ^{K}$ that minimizes the sum of squared residuals
+\begin{equation}
+  S(\beta) = \sum^T_{t=1}e^2_t = e^{'}e = (y-x\beta)^{'}(y-x\beta)
+\end{equation}
+If we rewrite $S(\beta)$ as
+\begin{equation}
+  S(\beta)=y^{'}y + \beta^{'}X^{'}X\beta - 2\beta^{'}X^{'}y
+\end{equation}
+we have:
+\begin{align}
+  \frac{\partial S(\beta)}{\partial \beta} &= 2 X^{'}X\beta - 2 X^{'}y\\
+  \frac{\partial^2 S(\beta)}{\partial \beta^2} &= 2 X^{'}X
+\end{align}
+Equating the first derivative to zero yields what are called the normal equations
+\begin{equation}
+  X^{'}Xb = X^{'}y
+\end{equation}
+If $X$ \textbf{is} of full rank $K$, then $X^{'}X$ is positive definite and the unique solution of (3.10) is 
+\begin{equation}
+  b = (X^{'}X)^{-1}X^{'}y
+\end{equation}
+If $X$ \textbf{is not} full rank, then equation(3.10) has a set of solutions:
+\begin{equation}
+  b = (X^{'}X)^{-}X^{'}y + (I - (X^{'}X)^{-}X^{'}X)w
+\end{equation}
+(类似与一元线性模型，$\beta$此时为一个$K$维向量，如果设计矩阵$X$满秩，则可通过矩阵逆运算解(3.10)直接求出最小值$b$，即$\beta$的无偏估计量。如果矩阵非满秩矩阵，则需要求g-inverse)
+\subsection{Best Linear Unbiased Estimation}
+\subsubsection{Linear Estimator}
+It is common to choose an estimator $\hat{\beta}$ that is \textbf{linear} in y, that is,
+\begin{equation}
+  \hat{\beta} = Cy + d
+\end{equation}
+where $C:K\times T$ and $d:K\times 1$ are nonstochastic matrices to be determined by minimizing a suitably chosen risk function.
+\par First, some definitions are introduced as we need:\\
+\textsf{Definition 1:} \textit{$\hat{\beta}$ is called a homogeneous estimator of $\beta$ if $d=0$; otherwise $\hat{\beta}$ is called heterogeneous}
+\par We have measured the model's goodness of fit by the sum of squared errors $S(\beta)$. Analogously we define, for the random variable $\hat{\beta}$, 
+the \textbf{quadratic loss function}
+\begin{equation}
+  L(\hat{\beta}, \beta, A) = (\hat{\beta} - \beta)^{'} A (\hat{\beta} - \beta)
+\end{equation}
+where $A$ is a symmetric and $\geq 0$ $K \times K$-matrix.
+\par Now, we can define the \textbf{quadratic risk} of an estimator $\hat{\beta}$ of $\beta$ is:\\
+\textsf{Definition 2:} \textit{The quadratic risk of an estimator:}
+\begin{equation}
+  R(\hat{\beta}, \beta, A) = E(\hat{\beta} - \beta)^{'} A (\hat{\beta} - \beta)
+\end{equation}
+\par The next step now consists of finding an estimator $\beta$ that minimizes the quadratic risk function. Therefore we have to define a criterion to compare estimators:\\
+\textsf{Definition 3:} \textit{An estimator $\hat{\beta_2}$ of $\beta$ is called $R(A)$ superior or an $R(A)$-improvement over another estimator $\hat{\beta_1}$ of $\beta$ if}
+\begin{equation}
+  R(\hat{\beta_1}, \beta, A) - R(\hat{\beta_2}, \beta, A) \geq 0.
+\end{equation} 
+(不同于OLS方法中$S(\beta)$定义了一个最小残差平方和来求得$\beta$的OLS无偏估计量，这里基于$\hat{\beta}$是$y$的线性组合为基准定理来推出一个二次损失函数来计算$\beta$的线性估计量)
 \end{document}
