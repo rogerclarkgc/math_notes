@@ -12,6 +12,8 @@
 \begin{document}
 \maketitle
 \numberwithin{equation}{section}
+\newtheorem{Definition}{\textsf{Definition}}[subsection]
+\newtheorem{Theorem}{\textsf{Theorem}}[subsection]
 \section{Basic concept of Linear model}
 The basic linear model is define by:
 \begin{equation}
@@ -464,7 +466,7 @@ Equating the first derivative to zero yields what are called the normal equation
 \begin{equation}
   X^{'}Xb = X^{'}y
 \end{equation}
-If $X$ \textbf{is} of full rank $K$, then $X^{'}X$ is positive definite and the unique solution of (3.10) is 
+If $X$ \textbf{is} of full rank $K$, then $X^{'}X$ is positive definite and the unique solution of (3.10) is
 \begin{equation}
   b = (X^{'}X)^{-1}X^{'}y
 \end{equation}
@@ -482,7 +484,7 @@ It is common to choose an estimator $\hat{\beta}$ that is \textbf{linear} in y, 
 where $C:K\times T$ and $d:K\times 1$ are nonstochastic matrices to be determined by minimizing a suitably chosen risk function.
 \par First, some definitions are introduced as we need:\\
 \textsf{Definition 1:} \textit{$\hat{\beta}$ is called a homogeneous estimator of $\beta$ if $d=0$; otherwise $\hat{\beta}$ is called heterogeneous}
-\par We have measured the model's goodness of fit by the sum of squared errors $S(\beta)$. Analogously we define, for the random variable $\hat{\beta}$, 
+\par We have measured the model's goodness of fit by the sum of squared errors $S(\beta)$. Analogously we define, for the random variable $\hat{\beta}$,
 the \textbf{quadratic loss function}
 \begin{equation}
   L(\hat{\beta}, \beta, A) = (\hat{\beta} - \beta)^{'} A (\hat{\beta} - \beta)
@@ -497,6 +499,124 @@ where $A$ is a symmetric and $\geq 0$ $K \times K$-matrix.
 \textsf{Definition 3:} \textit{An estimator $\hat{\beta_2}$ of $\beta$ is called $R(A)$ superior or an $R(A)$-improvement over another estimator $\hat{\beta_1}$ of $\beta$ if}
 \begin{equation}
   R(\hat{\beta_1}, \beta, A) - R(\hat{\beta_2}, \beta, A) \geq 0.
-\end{equation} 
+\end{equation}
 (不同于OLS方法中$S(\beta)$定义了一个最小残差平方和来求得$\beta$的OLS无偏估计量，这里基于$\hat{\beta}$是$y$的线性组合为基准定理来推出一个二次损失函数来计算$\beta$的线性估计量)
+\subsubsection{Mean Dispersion Error}
+The quadratic risk is closely related to the matrix-valued criterion of the mean dispersion error(MDE) of an estimator.The MDE is defined as the matrix
+\begin{equation}
+  M(\hat{\beta}, \beta) = E(\hat{\beta} - \beta)(\hat{\beta} - \beta)^{'}
+\end{equation}
+The covariance matrix of an estimator $\hat{\beta}$ by $V(\hat{\beta})$:
+\begin{equation}
+  V(\hat{\beta}) = E(\hat{\beta} - E(\hat{\beta}))(\hat{\beta} - E(\hat{\beta}))^{'}
+\end{equation}
+If $E(\hat{\beta}) = \beta$ then $\hat{\beta}$ will be called \textbf{unbiased} (for $\beta$). Otherwise, then $\hat{\beta}$ is called \textbf{biased}.
+The difference between $E(\hat{\beta})$ and $\beta$ is
+\begin{equation}
+  \textmd{Bias}(\hat{\beta}, \beta) = E(\hat{p\beta}) - \beta
+\end{equation}
+\par The following decomposition of the mean dispersion error often proves to be useful:
+\begin{equation}
+  M(\hat{\beta}, \beta) = V(\hat{\beta}) + (\textmd{Bias}(\hat{\beta}, \beta))(\textmd{Bias}(\hat{\beta}, \beta))^{'}
+\end{equation}
+We can define a criterion to compare MDE as we define in (3.16):\\
+\textsf{Definition 4:} \textit{Let $\hat{\beta_1}$ and $\hat{\beta_2}$ be two estimator of $\beta$. Then $\hat{\beta_2}$ is called MDE-superior to $\hat{\beta_1}$ if the difference of their MDE matrices is nonnegative definite,
+that is, if}
+\begin{equation}
+  \Delta(\hat{\beta_1}, \hat{\beta_2}) = M(\hat{\beta_1}, \beta) - M(\hat{\beta_2}, \beta) \geq 0
+\end{equation}
+\par One important connection between $R(A)$ superiority and MDE superiority is:
+\begin{equation}
+  \Delta (\hat{\beta_1}, \hat{\beta_2}) \geq 0 \leftrightarrows R(\hat{\beta_1}, \beta, A) - R(\hat{\beta_2}, \beta, A) = \textmd{tr}\{A\Delta(\hat{\beta_1}, \hat{\beta_2})\} \geq 0
+\end{equation}
+\subsection{Estimation of the Error Term $\epsilon$ and $\sigma^2$}
+We have estimated $X\beta$ by $X\hat{\beta}$, we may consider the residual
+\begin{equation}
+  \hat{\epsilon} = y - X\hat{\beta} = (I - P_X)y
+\end{equation}
+where $P_X=X(X^{'}X)^{-}X^{'}$ is the projection operator on $\Re(X)$, as an estimator of $\epsilon$, with the mean prediction error
+\begin{equation}
+  D(\hat{\epsilon}) = D(y - X\hat{\beta}) = D(I-P_X)y = \sigma^2(I-P_X)(I-P_X)
+\end{equation}
+Using the estimate $\hat{\epsilon}$ of $\epsilon$ we can obtain an \textbf{unbiased} estimator of $\sigma^2$ as
+\begin{equation}
+  s^2 = \frac{1}{T-r}y^{'}(I-P_X)y
+\end{equation}
+with $\textmd{rank}(X) = r$.
+\subsection{Classical Regression under Normal Errors}
+The classic linear regression model under normal errors is given by
+\begin{equation}
+\begin{split}
+  &y=X\beta + \epsilon\\
+  &\epsilon \sim N(0, \sigma^2 I)\\
+  &X \quad \textmd{nonstochastic}, \textmd{rank}(X)=K
+\end{split}
+\end{equation}
+\par Now we use maximum likelihood method to estimate parameters in eq(3.25)
+\subsubsection{The maximum-Likelihood (ML) Principle}
+\begin{Definition}
+Let $\xi = (\xi_1, \ldots, \xi_n)^{'}$ be a random variable with density function $f(\xi;\Theta)$, where the parameter vector $\Theta = (\Theta_1, \ldots, \Theta_m)^{'}$ is an element of the parameter space $\Omega$ comprising
+all values that are a priori admissible
+\end{Definition}
+The basic idea of ML principle is to consider the density $f(\xi;\Theta)$ for a specific realization of the sample $\xi_0$ of $\xi$ as a function of $\Theta$:
+\begin{displaymath}
+  L(\Theta) = L(\Theta_1, \ldots, \Theta_m) = f(\xi_0;\Theta)
+\end{displaymath}
+$L(\Theta)$ will be referred to as the \textbf{likelihood function of $\Theta$ given $\xi_0$}
+\par We want to find a value $\hat{\Theta}\in\Omega$ that maximizes the $L(\Theta)$:
+\begin{displaymath}
+  L(\hat{\Theta}) \geq L(\Theta) \quad for \ all \ \Theta \in \Omega
+\end{displaymath}
+(极大似然法就是首先建立要估计量的似然函数$f(\xi;\Theta)$，这个函数的自变量是我们估计量$\Theta$，参数是观测变量$\xi$，目的就是找到在某个（或某些）$\xi$下，使得似然函数最大化的$\hat{\Theta}$)
+\subsubsection{Maximum Likelihood Estimation in Classical Normal Regression}
+We have y follow the normal distribution from eq(3.26):
+\begin{equation}
+  y=X\beta + \epsilon \sim N(X\beta, \sigma^2 I)
+\end{equation}
+so the likelihood function of $y$ is given by
+\begin{equation}
+  \begin{split}
+    L(\beta, \sigma^2)=(2\pi \sigma^2)^{-T/2} e ^{-\frac{1}{2\sigma^2} (y-X\beta)^{'} (y-X\beta)}
+  \end{split}
+\end{equation}
+(这里的似然函数中的$X$是设计矩阵，已经包括了所有T个观测，所以是$T\times K$维的)
+It is appropriate to maximize $\ln L(\beta, \sigma^2)$ instead of $L(\beta, \sigma^2)$, as the maximizing argument remains unchanged:
+\begin{equation}
+  \ln L(\beta, \sigma^2) = - \frac{T}{2} \ln(2\pi \sigma^2) - \frac{1}{2\sigma^2}(y-X\beta)^{'}(y-X\beta)
+\end{equation}
+the parameter space is given by $\Omega = \{\beta;\sigma^2 : \beta \in \mathbb{R}^K; \sigma^2 > 0 \}$. We can solve the ML estimators of $\beta$ and $\sigma^2$ from:\\
+\begin{equation}
+  \begin{split}
+    \frac{\partial \ln L}{\partial \beta} &= \frac{1}{2 \sigma^2} 2X^{'}(y-X\beta)=0\\
+    \frac{\partial \ln L}{\partial \sigma^2} &= \frac{T}{2\sigma^2} + \frac{1}{2(\sigma^2)^2}(y-X\beta)^{'}(y-X\beta)=0.
+  \end{split}
+\end{equation}
+Then, the \textbf{likelihood equations} are given by:
+\begin{equation}
+  \begin{split}
+    & X^{'}X\hat{\beta} = X^{'}y\\
+    & \hat{\sigma^2}=\frac{1}{T}(y-X\hat{\beta})^{'}(y-X\hat{\beta})
+  \end{split}
+\end{equation}
+It is obviously that when $\textmd{Rank}(X)=K$ we get the unique ML estimator of $\beta$
+\begin{equation}
+  \hat{\beta} = b = (X^{'}X)^{-1}X^{'}y
+\end{equation}
+the ML estimator of $\sigma^2$ is \textbf{biased}:
+\begin{equation}
+  \hat{\sigma^2} = \frac{T-K}{T}s^2
+\end{equation}
+The asymptotic expectation is given by:
+\begin{equation}
+  \begin{split}
+    \lim_{T\rightarrow\inf} \textmd{E}(\hat{\sigma^2}) &= \bar{\textmd{E}}(\hat{\sigma^2})\\
+                                                       &= \textmd{E}(s^2)\\
+                                                       &= \sigma^2
+  \end{split}
+\end{equation}
+\par Thus, we can state the following result
+\begin{Theorem}
+  The maximum-likelihood estimator and OLS estimator of $\beta$ are identical in the classical normal regression model.The estimator $\hat{\sigma^2}$ of $\sigma^2$ is asymptotically unbiased.
+\end{Theorem}
+(可以看到极大似然估计量对斜率参数$\beta$的估计和OLS方法得出的是等价的无偏估计量，但对方差的估计量则是一个有偏估计量，但是当观测足够多时，趋近于OLS方法得出的无偏估计量)
 \end{document}
