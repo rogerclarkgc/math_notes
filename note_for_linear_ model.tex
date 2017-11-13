@@ -4,13 +4,42 @@
 \usepackage{pgfplots}
 \usepackage{enumerate}
 \usepackage{amssymb}
-\begin{titlepage}
-\author{rogerclark}
-\date{2017.10.23}
-\title{\LARGE Notes for Linear model}
-\end{titlepage}
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
 \begin{document}
-\maketitle
+\begin{titlepage}
+
+\begin{center}
+\textsc{\LARGE University of Science and Technology of China}\\[1.5cm]
+\textsc{\Large Roger's Notes}\\[0.5cm]
+\HRule \\[0.4cm]
+{ \huge \bfseries Notes for Linear Model}\\[0.4cm]
+\HRule \\[1.5cm]
+% Author and supervisor
+\begin{center} \large
+\emph\\
+Roger \textsc{Clark}
+\end{center}
+\begin{tikzpicture}
+\begin{axis}
+	\addplot+[only marks,
+			samples=15,
+			error bars/y dir=both,
+			error bars/y fixed=2.5]
+		{3*x+2.5*rand};
+	\label{pgfplots:label1}
+
+	\addplot+[mark=none] {3*x};
+	\label{pgfplots:label2}
+
+	\addplot {4*cos(deg(x))};
+	\label{pgfplots:label3}
+\end{axis}
+\end{tikzpicture}
+\vfill
+% Bottom of the page
+{\large 2017.11.7}
+\end{center}
+\end{titlepage}
 \numberwithin{equation}{section}
 \newtheorem{Definition}{\textsf{Definition}}[subsection]
 \newtheorem{Theorem}{\textsf{Theorem}}[subsection]
@@ -609,7 +638,7 @@ the ML estimator of $\sigma^2$ is \textbf{biased}:
 The asymptotic expectation is given by:
 \begin{equation}
   \begin{split}
-    \lim_{T\rightarrow\inf} \textmd{E}(\hat{\sigma^2}) &= \bar{\textmd{E}}(\hat{\sigma^2})\\
+    \lim_{T\rightarrow\infty} \textmd{E}(\hat{\sigma^2}) &= \bar{\textmd{E}}(\hat{\sigma^2})\\
                                                        &= \textmd{E}(s^2)\\
                                                        &= \sigma^2
   \end{split}
@@ -619,4 +648,52 @@ The asymptotic expectation is given by:
   The maximum-likelihood estimator and OLS estimator of $\beta$ are identical in the classical normal regression model.The estimator $\hat{\sigma^2}$ of $\sigma^2$ is asymptotically unbiased.
 \end{Theorem}
 (可以看到极大似然估计量对斜率参数$\beta$的估计和OLS方法得出的是等价的无偏估计量，但对方差的估计量则是一个有偏估计量，但是当观测足够多时，趋近于OLS方法得出的无偏估计量)
+\subsection{Analysis of Variance}
+We have known that for linear model $y=X\beta + \epsilon$, the variable $y$ follow:
+\begin{equation}
+  y \sim N(X\beta, \sigma^2 I_T)
+\end{equation}
+and
+\begin{equation}
+  b = (X^{'}X)^{-1}X^{'}y \sim N[\beta, \sigma^2 (X^{'}X)^{-1}]
+\end{equation}
+Further, partitioning the total sum of squares gives
+\begin{equation}
+\begin{split}
+  SYY &= y^{'}y\\
+      &= b^{'}X^{'}y + (y^{'}y - b^{'}X^{'}y)\\
+      &= SS_{Reg} + RSS
+\end{split}
+\end{equation}
+Where
+\begin{equation}
+  SS_{Reg} = b^{'}X^{'}y = b^{'}X^{'}Xb = y^{'}X(X^{'}X)^{-1}X^{'}y
+\end{equation}
+is the sum of square due to \textbf{regression}
+and
+\begin{equation}
+\begin{split}
+  RSS &= (y-\hat{y})^{'}(y-\hat{y})\\
+      & = y^{'}y - b^{'}X^{'}y
+\end{split}
+\end{equation}
+is the sum of square due to \textbf{residuals}\\
+We also should know that
+\begin{equation}
+\begin{split}
+  \frac{SS_{Reg}}{\sigma^2} &\sim \chi^2_K \left(\frac{\beta^{'}X^{'}P_X X\beta}{2\sigma^2}\right)\\
+  \frac{SYY}{\sigma^2} &\sim \chi^2_K \left(\frac{\beta^{'}X^{'}X\beta}{2\sigma^2}\right)\\
+\end{split}
+\end{equation}
+The mean square due to regression mean square due to error are
+\begin{equation}
+\begin{split}
+  MS_{Reg} &= \frac{SS_{Reg}}{K}\\
+  MSE &= \frac{RSS}{T-K}
+\end{split}
+\end{equation}
+Then,
+\begin{equation}
+  \frac{MS_{Reg}}{MSE} \sim F_{K, T-K} \left(\frac{\beta^{'}X^{'}X\beta}{2\sigma^2}\right)
+\end{equation}
 \end{document}
