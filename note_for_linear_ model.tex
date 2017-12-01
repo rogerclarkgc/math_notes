@@ -696,4 +696,99 @@ Then,
 \begin{equation}
   \frac{MS_{Reg}}{MSE} \sim F_{K, T-K} \left(\frac{\beta^{'}X^{'}X\beta}{2\sigma^2}\right)
 \end{equation}
+\subsection{Testing Linear Hypotheses}
+We consider the problem of testing a general linear hypothesis
+\begin{equation}
+  H_0:\ R\beta = r
+\end{equation}
+with $R$ a $(K-s)\times K$-matrix and $\textmd{rank}(R)=K-s$, against the alternative
+\begin{equation}
+  H_1:\ R\beta \neq r
+\end{equation}
+We have to consider the value of $s$ in (3.43) and (3.44).The general linear hypothesis contains two main special case:\\
+\textit{Case 1}: $s=0$. The $K\times K$-matrix $R$ is regular by the assumption $\textmd{rank}(X)=K$, and we may express $H_0$ and $H_1$ in the following form:
+\begin{equation}
+\begin{split}
+  H_0:\ \beta &= R^{-1}r = \beta ^* \\
+  H_1:\ \beta &\neq \beta^*
+\end{split}
+\end{equation}
+(当$s=0$时，$R$变为一个满秩方阵，可以取逆，所以可以直接演变成对$\beta$的假设检验)\\
+\textit{Case 2}:$s > 0$. We choose an $s \times K$-matrix $G$ complementary to $R$ such that the $K\times K$-matrix $\begin{pmatrix}
+  G\\R
+\end{pmatrix}$ is regular of rank $K$. Let
+\begin{displaymath}
+  X \begin{pmatrix} G\\R \end{pmatrix} ^ {-1} = \mathop{\tilde{X}}\limits_{T \times K} = \begin{pmatrix}
+    \mathop{\tilde{X_1}} \limits_{T \times s} & \mathop{\tilde{X_2}} \limits_{T \times (K - s)}
+  \end{pmatrix}
+\end{displaymath}
+We also define
+\begin{displaymath}
+  \mathop{\tilde{\beta_1}}\limits_{s \times 1} = G \beta, \qquad \mathop{\tilde{\beta_2}}\limits_{(K-s) \times 1} = R \beta = r
+\end{displaymath}
+Then we may transform the original model to:
+\begin{equation}
+  \begin{split}
+    y = X\beta + \epsilon &= X \begin{pmatrix} G \\ R \end{pmatrix}^{-1} \begin{pmatrix} G \\ R \end{pmatrix} \beta + \epsilon \\
+                          & = \begin{pmatrix} \tilde{X_1} & \tilde{X_2} \end{pmatrix} \begin{pmatrix} \tilde{\beta_1} \\ \tilde{\beta_2} \end{pmatrix} + \epsilon\\
+                          & = \tilde{X_1} \tilde{\beta_1} + \tilde{X_2} \tilde{\beta_2} + \epsilon
+  \end{split}
+\end{equation}
+Then, the hypotheses $H_0$ and $H_1$ are thus equivalent to:
+\begin{equation}
+\begin{split}
+  H_0:\ \tilde{\beta_2} &= r; \quad \tilde{\beta_1}\ \textmd{and}\ \sigma^2 > 0 \  \textmd{arbitrary}\\
+  H_1:\ \tilde{\beta_2} & \neq r; \quad \tilde{\beta_1}\ \textmd{and}\ \sigma^2 > 0 \  \textmd{arbitrary}
+\end{split}
+\end{equation}
+(当$s>0$时，我们取一个$s \times K$的矩阵$G$和$R$来构造一个满秩的矩阵$\begin{pmatrix}G\\R\end{pmatrix}$这样我们的线性模型中的$\beta$会分散到两个新的$\tilde{\beta_1}$和$\tilde{\beta_2}$中，
+我们的假设检验的形式也发生了改变)
+$\Omega$ stands for the whole parameter space (either $H_0$ or $H_1$ is valid) and $\omega \in \Omega$ stands for subspace in which only $H_0$ is true; thus
+\begin{equation}
+\begin{split}
+  \Omega &= {\beta;\sigma^2\ : \ \beta \in \mathbb{R}^K, \sigma^ > 0 }\\
+  \omega &= {\beta;\sigma^2\ : \ \beta \in \mathbb{R}^K \ \textmd{and} \ R\beta = r;  \sigma^2 > 0 }
+\end{split}
+\end{equation}
+(假设检验的参数空间$(\beta, \sigma^2)$是$\Omega$和$\omega$，分别对应整个参数空间以及当零假设成立时的假设空间)\\
+Then, the test statistic we will use the likelihood ratio
+\begin{equation}
+\begin{split}
+  \lambda (y) &= \frac{\textmd{max}_{\omega}L(\Theta)}{\textmd{max}_{\Omega}L(\Theta)}\\
+              &= \left(\frac{\hat{\sigma^2_{\omega}}}{\hat{\sigma^2_{\Omega}}}\right)^{-\frac{T}{2}}
+\end{split}
+\end{equation}
+where $\hat{\sigma^2_{\omega}}$ and $\hat{\sigma^2_{\Omega}}$ are ML estimators of $\sigma^2$ under $H_0$ and in $\Omega$
+\par The random variable $\lambda (y)$ can take values between 0 and 1, if $H_0$ is true, the numerator of $\lambda (y)$ gets closer to the denominator, 
+so that $\lambda (y)$ should be close to 1 in repeated samples. On the other hand, $\lambda (y)$ should be close to 0 if $H_1$ is true.
+\par Consider the linear transform of $\lambda (y)$:
+\begin{equation}
+\begin{split}
+  F &= {(\lambda (y))^{-T/2}}(T-K)(K-s)^{-1}\\
+    &= \frac{\hat{\sigma^2_{\omega}} - \hat{\sigma^2_{\Omega}}}{\hat{\sigma^2_{\Omega}}} \cdot \frac{T-K}{K-s}
+\end{split}
+\end{equation}
+If $\lambda \rightarrow 0$, then $F \rightarrow \infty$ and if $\lambda \rightarrow 1$, then $F \rightarrow 0$, so that:
+\begin{enumerate}
+  \item \textbf{F is closer to 0 if $H_0$ is true}
+  \item \textbf{F is sufficient large if $H_1$ is true}
+\end{enumerate}
+The distribution of $F$ is different when $s>0$ or $s=0$\\
+\textsf{Case 1:} $s=0$
+\begin{equation}
+  F = \frac{(b-\beta^{*})^{'} X^{'} X (b-\beta^{*})}{(y-Xb)^{'}(y-Xb)} \cdot \frac{T-K}{K}
+\end{equation}
+\textbf{distribution of $F$}
+\begin{enumerate}
+  \item $F \sim F_{K, T-K}(\sigma^{-2}(\beta-\beta^{*})^{'} X^{'} X (\beta - \beta^*))$ under $H_1$
+  \item $F$ is distributed as central $F_{K, T-K}$ under $H_0:\ \beta = \beta^*$
+\end{enumerate}
+Given a fixed level of significance of $\alpha$\
+\begin{enumerate}
+\item Accept $H_0$:\quad $0 \leq F \leq F_{K, T-K, 1-\alpha}$
+\item Critical region:\quad    $F > F_{K, T-K, 1-\alpha}$
+\end{enumerate}
+($F$值会随着$s$的取值不同而变化，当$s=0$，$F$符合参数为$F_{K, T-K}$的$F$分布，设定显著性为$\alpha$的情况下，当$F$值落在$1-\alpha$的$F$分位数内，即$(0, F_{K, T-K,1-\alpha})$时，
+接受$H_0$，当超出$F_{K, T-K,1-\alpha}$时，拒绝$H_0$)\\
+
 \end{document}
