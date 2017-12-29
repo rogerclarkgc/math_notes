@@ -759,7 +759,7 @@ Then, the test statistic we will use the likelihood ratio
 \end{split}
 \end{equation}
 where $\hat{\sigma^2_{\omega}}$ and $\hat{\sigma^2_{\Omega}}$ are ML estimators of $\sigma^2$ under $H_0$ and in $\Omega$
-\par The random variable $\lambda (y)$ can take values between 0 and 1, if $H_0$ is true, the numerator of $\lambda (y)$ gets closer to the denominator, 
+\par The random variable $\lambda (y)$ can take values between 0 and 1, if $H_0$ is true, the numerator of $\lambda (y)$ gets closer to the denominator,
 so that $\lambda (y)$ should be close to 1 in repeated samples. On the other hand, $\lambda (y)$ should be close to 0 if $H_1$ is true.
 \par Consider the linear transform of $\lambda (y)$:
 \begin{equation}
@@ -790,5 +790,70 @@ Given a fixed level of significance of $\alpha$\
 \end{enumerate}
 ($F$值会随着$s$的取值不同而变化，当$s=0$，$F$符合参数为$F_{K, T-K}$的$F$分布，设定显著性为$\alpha$的情况下，当$F$值落在$1-\alpha$的$F$分位数内，即$(0, F_{K, T-K,1-\alpha})$时，
 接受$H_0$，当超出$F_{K, T-K,1-\alpha}$时，拒绝$H_0$)\\
-
+\textsf{Case 2:} $s > 0$
+\begin{equation}
+  F = \frac{(b_2 - r)^{'}D(b_2 - r)}{(y - Xb)^{'}(y - Xb)}\frac{T - K}{K - s}
+\end{equation}
+\textbf{distribution of $F$}
+\begin{enumerate}
+  \item Accept $H_0$:\quad $0 \leq F \leq F_{K-s, T-K, 1-\alpha}$
+  \item Critical region:\quad $F > F_{K-s, T-K, 1-\alpha}$
+\end{enumerate}
+\subsection{Checking the Adequacy of Regression Analysis}
+\subsubsection{Univariate Regression and Multiple Regression}
+The basic model $y_t = \beta_0 + \beta_1 x_1 + \epsilon_t$ is appropriate when $b_1$ should be significantly different from zero.
+\par Formally, we compare the models:
+\begin{displaymath}
+  \begin{split}
+  H_0:& y_t = \beta_0 + \epsilon_t, \\
+  H_1:& y_t = \beta_0 + \beta_1 x_t + \epsilon_t,
+\end{split}
+\end{displaymath}
+by comparing testing $H_0: \beta_1 = 0$ against $H_1: \beta_1 \neq 0$, then the likelihood ratio test statistic is given by:
+\begin{equation}
+  \begin{split}
+    F_{1, T-2} = & \frac{b_1^2 SXX}{s^2}\\
+               = & \frac{SS_{Reg}}{RSS} (T-2)\\
+               = & \frac{MS_{Reg}}{s^2}
+  \end{split}
+\end{equation}
+\par If we consider more than two regressors, then we comparing testing:
+\begin{displaymath}
+  \begin{split}
+    H_0:& y = \textbf{1}\beta_0 + \epsilon \\
+    H_1:& y = \textbf{1}\beta_0 + X\beta_* + \epsilon
+  \end{split}
+\end{displaymath}
+the test statistic $F$ is:
+\begin{equation}
+  F_{K, T-K-1} = \frac{SS_{Reg}/K}{s^2}
+\end{equation}
+\subsection{Model choice based on an adjusted coefficient of determination}
+\par Denote by $X_1, \ldots, X_K$ all available regressors, and let ${X_{i1}, \ldots, X_{ip}}$ be a subset of $p \leq K$ regressors, the coefficient of determination:
+\begin{equation}
+  R_p^2 = 1 - \frac{RSS_p}{SYY}
+\end{equation}
+is inappropriate to compare a model with $K$ and one with $p < K$. \textbf{because $R^2_p$ always increases if an additional regressor is incorporated into the model, irrespective of its values}.
+The full model always has the greatest value of $R^2$
+\begin{Theorem}
+  Let $y=X_1\beta_1 + X_2 \beta_2 + \epsilon = X\beta + \epsilon$ be the full model and $y = X_1 \beta + \epsilon$ be a submodel, Then we have
+  \begin{equation}
+    R_X^2  - R_{X_1}^2 \geq 0.
+  \end{equation}
+\end{Theorem}
+\par On the basis of Theorem 3.10.1 we define the statistic
+\begin{equation}
+  F-change = \frac{(RSS_{X_1} - RSS_X)/(K - p)}{RSS_X/(T-K)}
+\end{equation}
+which is distributed as $F_{K-p, T-K}$ under $H_0$: "submodel is valid".\\
+\par we also define a changed coefficient of determination adjusted by the degrees of freedom of multiple model:
+\begin{equation}
+  \bar{R}_p^2 = 1 - \frac{T-1}{T-p}(1 - R_p^2)
+\end{equation}
+if we consider two models, the smaller of which is supposed to be fully contained in the bigger, and then we have:
+\begin{displaymath}
+  \bar{R}_{p + q}^2 < \bar{R}_{p}^2
+\end{displaymath}
+then smaller model obviously shows a better goodness of fit\\
+(对于多元模型，当回归因子增多时，标准的$R^2$会随因子增多而增大，并且这个增大于引入的新回归因子的数值无关，因此需要一个调整过的$\bar{R}^2$来帮助我们判断回归的好坏)
 \end{document}
