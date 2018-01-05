@@ -742,7 +742,7 @@ Then, the hypotheses $H_0$ and $H_1$ are thus equivalent to:
 \end{split}
 \end{equation}
 (当$s>0$时，我们取一个$s \times K$的矩阵$G$和$R$来构造一个满秩的矩阵$\begin{pmatrix}G\\R\end{pmatrix}$这样我们的线性模型中的$\beta$会分散到两个新的$\tilde{\beta_1}$和$\tilde{\beta_2}$中，
-我们的假设检验的形式也发生了改变)
+我们的假设检验的形式也发生了改变)\\
 $\Omega$ stands for the whole parameter space (either $H_0$ or $H_1$ is valid) and $\omega \in \Omega$ stands for subspace in which only $H_0$ is true; thus
 \begin{equation}
 \begin{split}
@@ -845,7 +845,9 @@ The full model always has the greatest value of $R^2$
 \begin{equation}
   F-change = \frac{(RSS_{X_1} - RSS_X)/(K - p)}{RSS_X/(T-K)}
 \end{equation}
-which is distributed as $F_{K-p, T-K}$ under $H_0$: "submodel is valid".\\
+which is distributed as $F_{K-p, T-K}$ under $H_0$: "submodel is valid". In model choice procedures, $F-change$ tests for significance of the change of
+$R^2_p$ by adding additional $K-p$ variables to the submodel\\
+($F-change$是一个用于检验当引入新的回归因子时，$R^2_p$是否变大的统计量，这个统计量遵循$F_{K-p, T-K}$的分布，当它趋于0时，表示零假设“原来的小模型有效”成立)
 \par we also define a changed coefficient of determination adjusted by the degrees of freedom of multiple model:
 \begin{equation}
   \bar{R}_p^2 = 1 - \frac{T-1}{T-p}(1 - R_p^2)
@@ -856,4 +858,76 @@ if we consider two models, the smaller of which is supposed to be fully containe
 \end{displaymath}
 then smaller model obviously shows a better goodness of fit\\
 (对于多元模型，当回归因子增多时，标准的$R^2$会随因子增多而增大，并且这个增大于引入的新回归因子的数值无关，因此需要一个调整过的$\bar{R}^2$来帮助我们判断回归的好坏)
+\subsection{Identification and Quantification of Multicollinearity}
+For basic model $y=X\beta + \epsilon$, when $X$ is deficient in rank, leading to singularity of $X^{'}X$.
+\par The spectral decomposition of the symmetric matrix $X^{'}X$ is
+\begin{equation}
+  X^{'}X = P\Lambda P^{'}
+\end{equation}
+with $P = (p_1, \ldots, p_K)$ and $PP^{'}=I$, the model(3.59) can be written as
+\begin{equation}
+  \begin{split}
+    y =& XPP^{'}\beta + \epsilon \\
+      =& \tilde{X} \tilde{\beta} + \epsilon
+  \end{split}
+\end{equation}
+with $\tilde{X} = XP$, $\tilde{\beta} = P^{'}\beta$, and $\tilde{X}^{'} \tilde{X} = P^{'}X^{'}XP = \Lambda = \textmd{diag}(\lambda_1, \ldots, \lambda_K)$,
+so that the columns vectors of $\tilde{X}$ are orthogonal. The elements of $\tilde{\beta}$ are called regression parameters of the \textbf{principal components}.
+\subsubsection{Principal Components Regression}
+We start at model(3.60)
+\begin{displaymath}
+  y = XPP^{'}\beta + \epsilon = \tilde{X}\tilde{\beta} + \epsilon
+\end{displaymath}
+Let the columns of the columns of the orthogonal matrix $P=(p_1, \ldots, p_K$ of the eigenvetors of $X^{'}X$ be numbered according to the magnitude of the eigenvalues
+$\lambda_1 \geq \lambda_2 \geq \cdots \geq \lambda_K$, Then $\tilde{x_i} = Xp_i$ is the $i^{th}$ principal component and we get
+\begin{equation}
+  \tilde{x_i}^{'} \tilde{x_i} = p^{'}_i X^{'} X p_i = \lambda_i
+\end{equation}
+We now assume exact multicollinearity. Hence $\textmd{rank}(X) = K-J$ with $J \geq 1$. We get
+\begin{equation}
+  \lambda_{K-J+1}=\cdots=\lambda_K=0
+\end{equation}
+（这里使用的其实是特征值分解的方法，如果$X$存在共线性，那么它的特征值形成的对角阵中对角线上必然有一部分特征值是0，依据这一特点可以构建后续的矩阵，分离共线性部分和独立的部分）\\
+According to the subdivision of the eigenvalues into the groups of zeros and non zeros, we define the subdivision:
+\begin{displaymath}
+  \begin{split}
+    P=(P_1, P_2),\quad \Lambda &= \begin{pmatrix}
+      \Lambda_1 & 0\\
+      0        & 0
+    \end{pmatrix}, \quad \tilde{X} = (\tilde{X_1}, \tilde{X_2}) = (XP_1, XP_2)\\
+    \tilde{\beta} &= \begin{pmatrix}
+      \tilde{\beta_1}\\
+      \tilde{\beta_2}
+    \end{pmatrix} = \begin{pmatrix}
+      P_1^{'}\beta \\
+      P_2^{'}\beta
+    \end{pmatrix}
+  \end{split}
+\end{displaymath}
+Then we know $\tilde{X_2}=0$ according to eq(3.61), we now obtain:
+\begin{equation}
+  \begin{split}
+    y &= \tilde{X_1}\tilde{\beta_1} + \tilde{X_2}\tilde{\beta_2} + \epsilon \\
+      &= \tilde{X_1}\tilde{\beta_1} + \epsilon.
+  \end{split}
+\end{equation}
+Then OLS estimate of the $(K-J)$ vector of $\tilde{\beta_1}$ is $b_1 = (\tilde{X}_1^{'} \tilde{X}_1)^{-1} \tilde{X}_1^{'} y$.The 
+OLS estimate of the full vector $\tilde{\beta}$ is\
+\begin{equation}
+  \begin{split}
+    \begin{pmatrix}
+      b_1\\
+      0
+    \end{pmatrix} &= (X^{'}X)^{-}X^{'}y\\
+                  &= (P \Lambda^{-}P^{'})X^{'}y
+  \end{split}
+\end{equation}
+The g-inverse of $\Lambda$ is :
+\begin{displaymath}
+\Lambda^{-} =
+  \begin{pmatrix}
+     \Lambda^{-1}_1 & 0\\
+     0 & 0
+  \end{pmatrix}
+\end{displaymath}
 \end{document}
