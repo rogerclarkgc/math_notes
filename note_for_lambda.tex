@@ -1,0 +1,63 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{ctex}
+\usepackage{pgfplots}
+\usepackage{enumerate}
+\usepackage{amssymb}
+\usepackage{tabu} 
+\begin{document}
+\numberwithin{equation}{section}
+\newtheorem{Definition}{\textbf{定义}}[section]
+\newtheorem{example}{\textsf{例子}}[section]
+  \section{$\lambda$演算的替换定义}
+\par 自由变量与约束变量：对于一个抽象$\lambda \phi. M$，若$\phi$出现在$M$ 中，我们称$\phi$ 为\textbf{约束变量}，如果$\phi$
+没有出现在$M$中，则$\phi$为\textbf{自由变量}，下面的例子区别了自由变量与约束变量：\\
+例子.1:\\
+\begin{tabular}{ll}
+ $\lambda$项$P$& 自由变量集合FV$(P)$  \\
+ $\lambda x. \lambda y. x\, y\, a\ b$& $\{a, b\}$  \\
+ $a\, b\, c\, d$& $\{a, b, c, d\}$  \\
+ $x\,y \lambda y. \lambda x. x$&$\{x, y\}$
+\end{tabular}
+\\
+上面第四个$\lambda$项中左侧的$x$和$y$是自由变量，右侧的$x$则是封闭变量。
+\par 下面给出$\lambda$演算中最重要的操作，\textbf{替换}的定义：
+\begin{Definition}
+  替换：对任意的$M$, $N$, $\phi$, 定义$[N/\phi]M$是把$M$中出现的自由变量$\phi$替换成$N$后得到的结果。具体如下归纳定义的解释：
+  \begin{enumerate}
+    \item $[N/\phi]\phi \equiv N$\\
+    解释：$\phi$是自由变量则替换
+    \item $[N/\phi]\alpha \equiv \alpha$若有$\alpha \neq \phi$ \\
+    解释：$\alpha$ 不是要替换的变量，则不替换。即$\lambda$项$\alpha$ 中没出现$\phi$ 则不替换
+    \item $[N/\phi](PQ) \equiv ([N/\phi]P [N/\phi]Q)$\\
+    解释：如果$PQ$中都出现了自由变量$\phi$那么可以分别执行替换
+    \item $[N/\phi](\lambda \phi.P) \equiv \lambda \phi.P$若有$\phi \notin FV(P)$\\
+    解释：$P$中没有自由变量$\phi$，说明$P$中全是约束变量的$\phi$，无法替换，例子：$[N/\phi](\lambda \phi.\phi) \equiv \lambda \phi.\phi$
+    \item $[N/\phi](\lambda \psi.P) \equiv \lambda \psi.P$若有$\phi \notin FV(P)$\\
+    解释：例子：$[N/\phi](\lambda \psi.\psi) \equiv \lambda \psi.\psi$类似于4，$P$中没有作为自由变量的$\phi$
+    \item $[N/\phi](\lambda \psi.P) \equiv \lambda \psi.[N/\phi]P$若有$\phi \in FV(P)$ 且$\psi \notin FV(N)$\\
+    解释：当$\phi \in FV(P)$满足，证明$P$中确实有自由变量$\phi$，当$\psi \notin FV(N)$ 时，说明要用于替换的$N$和被约束的$\psi$ 不同名，满足这两点则可以替换，如果有$\psi \in FV(N)$说明N 中有被约束的变量，那么替换进$P$后，本来P 中自由变量$\phi$就变成被约束的了，这已经改变了$P$ 的构造。\\
+    例子:首先看$\phi \in FV(P),\ \psi \in FV(N)$的情况:\\
+    $[x/ y](\lambda x. y)$，首先$y \in FV(P) \equiv \{y\}$满足替换的变量是自由变量的情况，但是我们看到$x \in FV(N) \equiv \{x\}$，如果替换就变成了$\lambda x. x$，这样原本是自由变量的$y$就变成约束变量$x$了，所以这是不能替换的。\\
+    如果改成$[a/y](\lambda x. y)$则满足所有条件，可以执行替换。
+    \item $[N/\phi](\lambda \psi.P) \equiv \lambda \eta . [N/\phi][\eta / \psi] P$ 若有$\phi \in FV(P)$且$\psi \in FV(N)$\\
+    解释：当$\psi \in FV(N)$满足时，如果我们仍然要执行替换，则需要一个中间变量$\eta$来替换原来$\lambda \psi.P$中的$\psi$，其实就是把与$N$重名的$\psi$改成一个与$\psi$和$\phi$的不同的名字。
+  \end{enumerate}
+\end{Definition}
+总得来说$\lambda$演算的替换规则是对$\lambda$项中自由变量的替换，更直接的说法就是对自由变量改名，并且改名后$\lambda$项意义等价。
+\section{$\beta$规约}
+\par 定义了替换后，我们需要知道什么形式的$\lambda$项可以进行替换，$\beta$规约就给出了所谓能进行替换操作的\textbf{$\beta$ 可约式}的定义:
+\begin{Definition}
+  $\beta$规约：我们把形如$(\lambda \phi.M)N$的$\lambda$项称为$\beta$可约式，可以把它与$\lambda$ 项$[N/\phi]M$
+  相等价，这个相等价的项也叫$\beta$缩减项。也就是说，我们可以有：
+  \begin{displaymath}
+    (\lambda \phi.M)N \equiv [N/\phi]M
+  \end{displaymath}
+  解释：这个定义其实就是我们在应用函数操作时，把函数参数替换成实际参数的过程。虽然$\lambda$演算是形式化的数学系统，但我们可以赋予它函数的意义；我们把$(\lambda \phi.M)$看成规则为$M$，参数为$\phi$的一个函数，而把$(MN)$看成把规则M作用到参数$N$上，那么
+  $(\lambda \phi.M)N$就是把函数$(\lambda \phi.M)$应用到参数N上，直接的说就是“把参数$N$带入到规则$M$中去”这一个操作，这个操作其实就是所谓的替换操作的意思$[N/\phi]M$，即“把M中是自由变量的$\phi$项用新的项$N$替换”
+\end{Definition}
+当$P$中含有形如$(\lambda \phi.M)N$的项时，可以整体替换成$[N/\phi]M$，这个变化成为\textbf{$\beta$缩减}，用$R$代表之后的项即\textbf{$P$被$\beta$缩减为$R$}，记作：
+\begin{equation}
+  P \rhd_{1 \beta} R
+\end{equation}
+\end{document}
