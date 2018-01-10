@@ -4,12 +4,31 @@
 \usepackage{pgfplots}
 \usepackage{enumerate}
 \usepackage{amssymb}
-\usepackage{tabu} 
+\usepackage{tabu}
 \begin{document}
 \numberwithin{equation}{section}
 \newtheorem{Definition}{\textbf{定义}}[section]
 \newtheorem{example}{\textsf{例子}}[section]
-  \section{$\lambda$演算的替换定义}
+\section{$\lambda$演算基本定义}
+\par 首先要认识到我们定义的$\lambda$项是一个符号系统，目前不包含我们认知上“数字”的概念。
+\begin{Definition}
+  \textbf{$\lambda$项}：$\lambda$项是这样一种字符串，它们组成一个无穷集合，里面的所有元素都是满足如下性质：
+  \begin{enumerate}
+    \item 所有元素都是$\lambda$项，名为\textbf{原子}
+    \item 若$M$和$N$为$\lambda$项，则$(MN)$也是$\lambda$项，且这种形式的符号名为\textbf{应用}
+    \item 若有$\lambda$项$M$和参数$\phi$，则形如$(\lambda \phi.M)$的符号也是$\lambda$项，名为\textbf{抽象}
+  \end{enumerate}
+  解释：若用函数观点解释定义中的第三个小项，$\lambda \phi.M$实际上是一个函数定义，$\phi$是参数，$M$则是函数体，由于这里的函数本身也是$\lambda$项，所以可以以参数形式传入其他函数。
+  第二小点里的应用其实就是一个带入参数的过程，这里可以理解为左边$M$是函数，右边$N$是参数，$(MN)$就是把$N$带入到$M$中
+\end{Definition}
+完整的$\lambda$项包含很多括号来区分各个项，下面有几个约定用于省略括号的书写。
+\begin{enumerate}
+\item $\lambda$项的最外层括号可以省略。如：$(\lambda x.x) \equiv \lambda x.x$;
+\item 对于左结合的应用，如$(((MN)P)Q)$，括号可省略：$(((MN)P)Q) \equiv MNPQ$
+\item 对于抽象型$\lambda$项，如$(\lambda \phi.M)$，M最外的括号可省略，如：$\lambda x.(y\, z) \equiv \lambda x. y\, z$
+\end{enumerate}
+
+\section{$\lambda$演算：替换}
 \par 自由变量与约束变量：对于一个抽象$\lambda \phi. M$，若$\phi$出现在$M$ 中，我们称$\phi$ 为\textbf{约束变量}，如果$\phi$
 没有出现在$M$中，则$\phi$为\textbf{自由变量}，下面的例子区别了自由变量与约束变量：\\
 例子.1:\\
@@ -41,11 +60,11 @@
     $[x/ y](\lambda x. y)$，首先$y \in FV(P) \equiv \{y\}$满足替换的变量是自由变量的情况，但是我们看到$x \in FV(N) \equiv \{x\}$，如果替换就变成了$\lambda x. x$，这样原本是自由变量的$y$就变成约束变量$x$了，所以这是不能替换的。\\
     如果改成$[a/y](\lambda x. y)$则满足所有条件，可以执行替换。
     \item $[N/\phi](\lambda \psi.P) \equiv \lambda \eta . [N/\phi][\eta / \psi] P$ 若有$\phi \in FV(P)$且$\psi \in FV(N)$\\
-    解释：当$\psi \in FV(N)$满足时，如果我们仍然要执行替换，则需要一个中间变量$\eta$来替换原来$\lambda \psi.P$中的$\psi$，其实就是把与$N$重名的$\psi$改成一个与$\psi$和$\phi$的不同的名字。
+    解释：当$\psi \in FV(N)$满足时，如果我们仍然要执行替换，则需要一个中间变量$\eta$来替换原来$\lambda \psi.P$中的$\psi$，其实就是把与$N$重名的$\psi$改成一个与$\psi$和$\phi$的不同的名字，这样就变成了6里的情况。
   \end{enumerate}
 \end{Definition}
 总得来说$\lambda$演算的替换规则是对$\lambda$项中自由变量的替换，更直接的说法就是对自由变量改名，并且改名后$\lambda$项意义等价。
-\section{$\beta$规约}
+\section{$\lambda$演算：$\beta$规约}
 \par 定义了替换后，我们需要知道什么形式的$\lambda$项可以进行替换，$\beta$规约就给出了所谓能进行替换操作的\textbf{$\beta$ 可约式}的定义:
 \begin{Definition}
   $\beta$规约：我们把形如$(\lambda \phi.M)N$的$\lambda$项称为$\beta$可约式，可以把它与$\lambda$ 项$[N/\phi]M$
@@ -56,8 +75,59 @@
   解释：这个定义其实就是我们在应用函数操作时，把函数参数替换成实际参数的过程。虽然$\lambda$演算是形式化的数学系统，但我们可以赋予它函数的意义；我们把$(\lambda \phi.M)$看成规则为$M$，参数为$\phi$的一个函数，而把$(MN)$看成把规则M作用到参数$N$上，那么
   $(\lambda \phi.M)N$就是把函数$(\lambda \phi.M)$应用到参数N上，直接的说就是“把参数$N$带入到规则$M$中去”这一个操作，这个操作其实就是所谓的替换操作的意思$[N/\phi]M$，即“把M中是自由变量的$\phi$项用新的项$N$替换”
 \end{Definition}
-当$P$中含有形如$(\lambda \phi.M)N$的项时，可以整体替换成$[N/\phi]M$，这个变化成为\textbf{$\beta$缩减}，用$R$代表之后的项即\textbf{$P$被$\beta$缩减为$R$}，记作：
+当$P$中含有形如$(\lambda \phi.M)N$的项时，可以整体替换成$[N/\phi]M$，这个变化成为\textbf{$\beta$缩减}，用$R$代表之后的项即\textbf{$P$ 被$\beta$缩减为$R$}，记作：
 \begin{equation}
   P \rhd_{1 \beta} R
 \end{equation}
+当$P$经过有限步骤缩减到$Q$，称$P$被$\beta$规约到$Q$，经过有限步缩减后得到的$\lambda$项如果无法再进行$\beta$缩减，此时的项称为\textbf{$\beta$ 范式}。
+\begin{Definition}
+  $\beta$范式：若一个$\lambda$项$Q$不含$\beta$可约式，则称$Q$为$\beta$范式，若$P$可被$\beta$规约到$Q$，则称$Q$是$P$的$\beta$范式
+\end{Definition}
+\section{用$\lambda$演算定义自然数与数学运算}
+\par 有了上面的基本规则，可以用$\lambda$演算定义自然数，并在此基础上进一步定义加、减、乘、除乃至逻辑谓词，当然这个自然数和我们通常理解的自然数有一些不同。首先给出自然数“0”的定义：
+\begin{equation}
+  \textbf{ZERO} = \lambda f. \lambda x.x
+\end{equation}
+首先不考虑这个$\lambda$项有什么意思，我们接着进行定义。有了“0”，我们只需要定义一个函数，这个函数产生比原来大“1”的新数字：
+\begin{equation}
+  \textbf{SUCC} = \lambda n. \lambda f. \lambda x. f\,(n\,f\,x)
+\end{equation}
+有了这两个定义，我们可以不断产生新的比原来大“1”的数字。比如我们这么应用：
+\begin{displaymath}
+  \begin{split}
+    \textbf{SUCC}\ \textbf{ZERO} &\equiv \lambda n. \lambda f. \lambda x. f\,(n\,f\,x) \, \lambda f.\lambda x.x\\
+    &\rhd_{1\beta} \lambda f. \lambda x. f\,((\lambda f. \lambda x.x)\,f\,x)\\
+    &\rhd_{1\beta} \lambda f. \lambda x. f\, ((\lambda x.x)\, x)\\
+    &\rhd_{1\beta} \lambda f. \lambda x. f\, x
+  \end{split}
+\end{displaymath}
+让我们应用$\beta$缩减和替换的法则来逐步解释这个运算:
+\begin{enumerate}
+  \item 第一行，展开形式的两项
+  \item 第二行，执行第一次$\beta$缩减，$\beta$缩减项形式为：$(\lambda n. M)\lambda f.\lambda x. x$，把$M$中的$n$用$\lambda f.\lambda x.x$替换，FV$(M)=\{n\}$，n是自由变量，满足进行替换要求得到$\lambda f. \lambda x. f\,((\lambda f. \lambda x.x)\,f\,x)$
+  \item 第三行，执行第二次$\beta$缩减，$\beta$缩减项的形式为：$(\lambda f.M)f$，把$M$中的$f$用$f$替换，FV$(M) = \emptyset$，$M$中没有自由变量，不能进行替换；M维持原样不进行替换得到$\lambda f. \lambda x. f\, ((\lambda x.x)\, x)$
+  \item 第四行，执行第三次$\beta$缩减，$\beta$缩减项的形式为：$(\lambda x.M)x$，把$M$中的$x$用$x$替换，FV$(M)= \emptyset$，$M$中没有自由变量，M维持原样不进行替换得到$\lambda f. \lambda x. f\, x$
+\end{enumerate}
+最后我们的结果是$\textbf{SUCC}\ \textbf{ZERO} \equiv \lambda f.\lambda x. f\,x$，我们从形式上和\textbf{ZERO}进行比较;
+\begin{equation}
+  \begin{split}
+    \textbf{ZERO} &= \lambda f. \lambda x.x\\
+    \textbf{ONE} &= \lambda f. \lambda x. f\, x
+  \end{split}
+\end{equation}
+可以看到\textbf{ONE}比$\textbf{ZERO}$多了一个$f$，如果以函数定义来理解的话，$\lambda f. \lambda x.x$是一个以$f$为参数，返回$\lambda x.x$ 函数，这个返回函数同样接受$x$，最后返回一个$x$，用$\lambda$演算来就是这样：
+\begin{displaymath}
+\begin{split}
+  \textbf{ZERO}\,f\,x &\equiv (\lambda x. x)\,x\\
+  &\equiv x
+\end{split}
+\end{displaymath} 
+可以看到，不论$f$是什么，$\textbf{ZERO}$不会让$f$作用到$x$上，也就是说：\textbf{$\textbf{ZERO}\,f\,x$相当于是作用0次$f$到$x$上}，同样的我们可以继续这么理解\textbf{ONE}，$\lambda f. \lambda x. f\, x$接受$f$，返回了$\lambda x. f\, x$，随后这个函数接受$x$返回了$f\,x$,则：
+\begin{displaymath}
+  \begin{split}
+    \textbf{ONE}\,f\,x &\equiv (\lambda x. f\, x)\,x\\
+    &\equiv f\, x
+  \end{split}
+\end{displaymath}
+这次就不同了，$f$被应用到了$x$上一次，相当于执行了一次$f(x)$，那么相当于：\textbf{$\textbf{ONE}\,f\,x$相当于是作用1次$f$到$x$上}
 \end{document}
