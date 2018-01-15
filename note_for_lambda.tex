@@ -60,7 +60,8 @@
     $[x/ y](\lambda x. y)$，首先$y \in FV(P) \equiv \{y\}$满足替换的变量是自由变量的情况，但是我们看到$x \in FV(N) \equiv \{x\}$，如果替换就变成了$\lambda x. x$，这样原本是自由变量的$y$就变成约束变量$x$了，所以这是不能替换的。\\
     如果改成$[a/y](\lambda x. y)$则满足所有条件，可以执行替换。
     \item $[N/\phi](\lambda \psi.P) \equiv \lambda \eta . [N/\phi][\eta / \psi] P$ 若有$\phi \in FV(P)$且$\psi \in FV(N)$\\
-    解释：当$\psi \in FV(N)$满足时，如果我们仍然要执行替换，则需要一个中间变量$\eta$来替换原来$\lambda \psi.P$中的$\psi$，其实就是把与$N$重名的$\psi$改成一个与$\psi$和$\phi$的不同的名字，这样就变成了6里的情况。
+    解释：当$\psi \in FV(N)$满足时，如果我们仍然要执行替换，则需要一个中间变量$\eta$来替换原来$\lambda \psi.P$中的$\psi$，其实就是把与$N$重名的$\psi$改成一个与$\psi$和$\phi$的不同的名字，这样就变成了6里的情况。\\
+    例子：我们有$\lambda x. (\lambda y. x\,y)y$，首先，我们知道$x \in FV(\lambda y. x\,y) = \{x\}$，$x$确实是自由变量，如果此时贸然替换，我们的结果会变成这样$\lambda y. y\,y$，这样一看本来是自由变量的$x$居然变成了被约束的$y$，这不已经改变了本来的表达式的意思了？所以我们先替换同名的$y$，这样先变成$\lambda x.(\lambda t. x\,t)y$，然后我们继续替换，结果为$\lambda t. y\, t$，根据$\alpha$规约，我们进行改名不会改变表达式意义，我们又可以重新写成$\lambda y. x\, y$
   \end{enumerate}
 \end{Definition}
 总得来说$\lambda$演算的替换规则是对$\lambda$项中自由变量的替换，更直接的说法就是对自由变量改名，并且改名后$\lambda$项意义等价。
@@ -106,7 +107,7 @@
   \item 第一行，展开形式的两项
   \item 第二行，执行第一次$\beta$缩减，$\beta$缩减项形式为：$(\lambda n. M)\lambda f.\lambda x. x$，把$M$中的$n$用$\lambda f.\lambda x.x$替换，FV$(M)=\{n\}$，n是自由变量，满足进行替换要求得到$\lambda f. \lambda x. f\,((\lambda f. \lambda x.x)\,f\,x)$
   \item 第三行，执行第二次$\beta$缩减，$\beta$缩减项的形式为：$(\lambda f.M)f$，把$M$中的$f$用$f$替换，FV$(M) = \emptyset$，$M$中没有自由变量，不能进行替换；M维持原样不进行替换得到$\lambda f. \lambda x. f\, ((\lambda x.x)\, x)$
-  \item 第四行，执行第三次$\beta$缩减，$\beta$缩减项的形式为：$(\lambda x.M)x$，把$M$中的$x$用$x$替换，FV$(M)= \emptyset$，$M$中没有自由变量，M维持原样不进行替换得到$\lambda f. \lambda x. f\, x$
+  \item 第四行，执行第三次$\beta$缩减，$\beta$缩减项的形式为：$(\lambda x.M)x$，把$M$中的$x$用$x$替换，FV$(M)= \{x\}$，$M$中没有自由变量，M 维持原样不进行替换得到$\lambda f. \lambda x. f\, x$
 \end{enumerate}
 最后我们的结果是$\textbf{SUCC}\ \textbf{ZERO} \equiv \lambda f.\lambda x. f\,x$，我们从形式上和\textbf{ZERO}进行比较;
 \begin{equation}
@@ -121,7 +122,7 @@
   \textbf{ZERO}\,f\,x &\equiv (\lambda x. x)\,x\\
   &\equiv x
 \end{split}
-\end{displaymath} 
+\end{displaymath}
 可以看到，不论$f$是什么，$\textbf{ZERO}$不会让$f$作用到$x$上，也就是说：\textbf{$\textbf{ZERO}\,f\,x$相当于是作用0次$f$到$x$上}，同样的我们可以继续这么理解\textbf{ONE}，$\lambda f. \lambda x. f\, x$接受$f$，返回了$\lambda x. f\, x$，随后这个函数接受$x$返回了$f\,x$,则：
 \begin{displaymath}
   \begin{split}
@@ -129,5 +130,69 @@
     &\equiv f\, x
   \end{split}
 \end{displaymath}
-这次就不同了，$f$被应用到了$x$上一次，相当于执行了一次$f(x)$，那么相当于：\textbf{$\textbf{ONE}\,f\,x$相当于是作用1次$f$到$x$上}
+这次就不同了，$f$被应用到了$x$上一次，相当于执行了一次$f(x)$，那么相当于：\textbf{$\textbf{ONE}\,f\,x$相当于是作用1次$f$到$x$上}，如果我们反复的运用$\textbf{SUCC}$，我们可以得到如下的结果：
+\begin{displaymath}
+  \begin{split}
+    \textbf{ZERO} &= \lambda f. \lambda x. x \\
+    \textbf{ONE} &= \textbf{SUCC}\, \textbf{ZERO} \\
+                 &= \lambda f. \lambda x. f\, x \\
+    \textbf{TWO} &= \textbf{SUCC}\, (\textbf{SUCC}\, \textbf{ZERO}) \\
+                 &= \lambda f. \lambda x. f\, (f\, x) \\
+                 \cdots
+  \end{split}
+\end{displaymath}
+可以看出来，这里“数字”的定义相当于\textbf{运用了$n$次$f$在$x$上}，这种数字又叫做\textbf{邱奇数（Church Number）}，有了数字定义的，接着可以在这些定义上给出数学运算的定义了，下面分别给出加法、乘法、指数、前驱和减法的组合子的定义：
+\begin{align}
+  \textbf{PLUS} &= \lambda m. \lambda n. m\, \textbf{SUCC}\, n\\
+  \textbf{MULT} &= \lambda m. \lambda n. \lambda f. m\,(n\,f)\\
+  \textbf{POW} &= \lambda b \lambda e. e\,b\\
+  \textbf{PRED} &= \lambda n. \lambda f. \lambda x. n\,(\lambda g. \lambda h. h\,(g\,f))(\lambda u. x)(\lambda u.u)\\
+  \textbf{SUB} &= \lambda m. \lambda n. n\, \textbf{PRED}\, m
+\end{align}
+用例子来看看这几个算数组合字的功能，首先是\textbf{PLUS}：\\
+例子：
+\begin{displaymath}
+\begin{split}
+  \textbf{PLUS}\, \textbf{ONE}\, \textbf{TWO} & \equiv (\lambda m. \lambda n. m\, \textbf{SUCC}\, n)\ \textbf{ONE}\ \textbf{TWO}\\
+  &\equiv \textbf{ONE}\ \textbf{SUCC}\ \textbf{TWO}\\
+  &\equiv (\lambda f. \lambda x. f\,x)\ \textbf{SUCC}\ \textbf{TWO}\\
+  &\equiv \lambda x. \ \textbf{SUCC}\ x\ \textbf{TWO}\\
+  &\equiv \textbf{SUCC}\ \textbf{TWO}\\
+  &\equiv \lambda f. \lambda x. f(f(fx)) \equiv \textbf{THREE}
+\end{split}
+\end{displaymath}
+\textbf{PLUS}是二元组合子，实现类似与加法的操作，返回两个邱奇数之和。
+下面看看\textbf{MULT}的例子：
+\begin{displaymath}
+\begin{split}
+\textbf{MULT}\, \textbf{ONE}\, \textbf{TWO} & \equiv \lambda m. \lambda n. \lambda f. m(n\,f)\ \textbf{one}\ \textbf{two}\\
+& \equiv \ \lambda f. \textbf{ONE}\ (\textbf{TWO}\ f)\\
+& \equiv \lambda f. \lambda x. f(f\,x)
+\end{split}
+\end{displaymath}
+如果严格利用$\beta$规约化简演算式子会很长，这里可以这么理解：$\textbf{TWO}$虽然作为邱奇数定义，但它也是一个函数，如果有$\textbf{TWO}\ f$，那么就是把$f$作用两次，而$\textbf{ONE}\ (\textbf{TWO}\ f)$可以理解为先作用两次，再作用一次到两次的结果，这两相当于一共作用了两次到$f$
+\section{用$\lambda$演算定义逻辑词}
+\par 更进一步的我们给出用$\lambda$演算定义的逻辑谓词，它们包括真、假、与、或、非、判断：
+\begin{align}
+  \textbf{TRUE} &= \lambda x. \lambda y. x \\
+  \textbf{FALSE} &= \lambda x. \lambda y. y\\
+  \textbf{AND} &= \lambda p. \lambda q. p\,q\,p\\
+  \textbf{OR} &= \lambda p. \lambda q. p\, p\, q\\
+  \textbf{NOT} &= \lambda p. \lambda a. \lambda b. p\, b\, a\\
+  \textbf{IF} &= \lambda p. \lambda a. \lambda b. p\, a\, b  
+\end{align}
+这里\textbf{AND}、\textbf{OR}是二元组合子，需要形如$\textbf{AND}\ \textbf{TRUE}\ \textbf{FALSE}$的形式，而\textbf{NOT}是一元组合字，运用形式为$\textbf{NOT}\ \textbf{FALSE}$。\\
+而\textbf{IF}是三元组合子，它的运用如下$\textbf{IF}\ \textbf{TRUE}\ a\ b$这个组合子第一个参数为一个运算结果为逻辑谓词的表达式，当为真是返回第二个参数，这里就是$a$，当为假时返回第三个参数，也即$b$。
+\par 有了这些基本的逻辑谓词，我们可以定义甚至可以定义一些基本的函数：
+\begin{align}
+  \textbf{ISZERO} &= \lambda n. n\,(\lambda x. \textbf{FALSE})\,\textbf{TRUE}\\
+  \textbf{LEQ} &= \lambda m. \lambda n.\, \textbf{ISZERO}\, (\textbf{SUB}\,m\, n)\\
+  \textbf{EQ} &= \lambda m. \lambda n. \, \textbf{AND}\, (\textbf{LEQ}\, m\, n)\, (\textbf{LEQ}\, n\, m)\\
+  \textbf{MAX} &= \lambda m. \lambda n. \, \textbf{IF}\, (\textbf{LEQ}\, m\, n)\, n\, m\\
+  \textbf{MIN} &= \lambda m. \lambda n. \, \textbf{IF}\, (\textbf{LEQ}\, m\, n)\, m\, n
+\end{align}
+这些函数分别是判断是否为0、小于等于、等于，取两个数的最大值、取两个数的最小值。
+\section{用$\lambda$演算实现递归定义}
+\par 实际上循环的操作可以转化成一个递归，如果实现了递归的定义，那么$\lambda$演算已经具备了一个程序语言的基本要素。
 \end{document}
+
