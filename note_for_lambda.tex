@@ -179,7 +179,7 @@
   \textbf{AND} &= \lambda p. \lambda q. p\,q\,p\\
   \textbf{OR} &= \lambda p. \lambda q. p\, p\, q\\
   \textbf{NOT} &= \lambda p. \lambda a. \lambda b. p\, b\, a\\
-  \textbf{IF} &= \lambda p. \lambda a. \lambda b. p\, a\, b  
+  \textbf{IF} &= \lambda p. \lambda a. \lambda b. p\, a\, b
 \end{align}
 这里\textbf{AND}、\textbf{OR}是二元组合子，需要形如$\textbf{AND}\ \textbf{TRUE}\ \textbf{FALSE}$的形式，而\textbf{NOT}是一元组合字，运用形式为$\textbf{NOT}\ \textbf{FALSE}$。\\
 而\textbf{IF}是三元组合子，它的运用如下$\textbf{IF}\ \textbf{TRUE}\ a\ b$这个组合子第一个参数为一个运算结果为逻辑谓词的表达式，当为真是返回第二个参数，这里就是$a$，当为假时返回第三个参数，也即$b$。
@@ -193,6 +193,61 @@
 \end{align}
 这些函数分别是判断是否为0、小于等于、等于，取两个数的最大值、取两个数的最小值。
 \section{用$\lambda$演算实现递归定义}
-\par 实际上循环的操作可以转化成一个递归，如果实现了递归的定义，那么$\lambda$演算已经具备了一个程序语言的基本要素。
+\par 实际上循环的操作可以转化成一个递归，如果实现了递归的定义，那么$\lambda$演算已经具备了一个程序语言的基本要素。使用前面定义的基本函数和一些逻辑谓词，可以给出这样的一个递归阶乘的定义：
+\begin{equation}
+  \textbf{FACT} = \lambda n. \textbf{IF}\,(\textbf{ISZERO}\, n)\, \textbf{ONE}\,(\textbf{MULT}\, n\, (\textbf{FACT}\,(\textbf{PRED}\, n)))
+\end{equation}
+\textbf{FACT}的唯一参数为$n$，当$n=\textbf{ZERO}$，则返回$\textbf{IF}$的第一个分支即\textbf{ONE}，不满足则返回$\textbf{MULT}\, n\,(\textbf{FACT}\,(\textbf{PRED}\, n))$。
+这个式子形式上似乎是没有错的，但却有一个问题，\textbf{FACT}函数中居然又出现了\textbf{FACT}，一个函数自己参与了自己的定义，这种自指是非法的$\lambda$表达式，是无法通过$\beta$规约运算的。
+\par 要避免在定义中出现自指现象，我们需要改造一下这个函数，首先把定义中的$\textbf{FACT}$用$f$替代：
+\begin{equation}
+  \textbf{FACTf} = \lambda f. \lambda n. \textbf{IF}\,(\textbf{ISZERO}\, n)\, \textbf{ONE}\,(\textbf{MULT}\, n\, (f\,(\textbf{PRED}\, n)))
+\end{equation}
+现在这个定义没有出现自指，但也没有迭代功能，它第一个参数$f$很关键，如果这个参数能是这样一个函数，当它被替换进\textbf{FACTf}后，能够使得
+\textbf{FACTf}能够应用到自己身上，这样我们能够得到迭代的定义了，也就是说，我们需要找到这样一个组合子，它满足：
+\begin{equation}
+  \textbf{Y}\, \textbf{F} = \textbf{F(\textbf{Y\,F})}
+\end{equation}
+在函数中，形似以上的定义，我们给出不动点的定义：
+\begin{Definition}
+  不动点：对函数$f$，我们称$x$是$f$的不动点，当且仅当$x$满足：
+  \begin{displaymath}
+    f(x) = x
+  \end{displaymath}
+\end{Definition}
+我们现在直接给出不动点组合子\textbf{Y}的定义：
+\begin{equation}
+  \textbf{Y} = \lambda g. (\lambda x. g(x\,x))\,\lambda x. g(x\,x)
+\end{equation}
+注意到，这个是一个无法规约的$\beta$表达式。有了这个组合子，我们能够实现类似函数中不动点的效果：
+\begin{equation}
+\begin{split}
+  \textbf{Y}\, \textbf{F} &\equiv (\lambda g. (\lambda x. g(x\,x))\,\lambda x. g(x\,x))\,\textbf{F}\\
+  &= [\textbf{F}/g](\lambda x. g(x\,x))\, \lambda x. g(x\,x) = (\lambda x. F(x\,x))\, \lambda x. F(x\,x)\\
+  &= [\lambda x. \textbf{F}(x\,x)/x]\textbf{F}(x\,x) = \textbf{F}((\lambda x. \textbf{F}(x\,x))\,\lambda x. \textbf{F}(x\,x))\\
+  &= \textbf{F}(\textbf{Y\,F})
+\end{split}
+\end{equation}
+有了不动点组合子$\textbf{Y}$，我们可以给出阶乘的定义：
+\begin{equation}
+  \textbf{FACT} = \textbf{Y}\, \textbf{FACTf}
+\end{equation}
+我们用一个例子来实际看看这个组合子是怎么在阶乘中起作用的：、
+\begin{displaymath}
+  \begin{split}
+    \textbf{FACT}\ \textbf{FIVE} &\equiv \textbf{Y}\ \textbf{FACTf}\ \textbf{FIVE}\\
+    &=_{by\,eq6.5} \textbf{FACTf}\ (\textbf{Y}\ \textbf{FACTf})\ \textbf{FIVE}\\
+    &= [\textbf{Y}\ \textbf{FACTf}/f]\lambda n. \textbf{IF}\,(\textbf{ISZERO}\, n)\, \textbf{ONE}\,(\textbf{MULT}\, n\ (f\,(\textbf{PRED}\, n)))\ \textbf{FIVE}\\
+    &= \lambda n. \textbf{IF}\,(\textbf{ISZERO}\, n)\, \textbf{ONE}\,(\textbf{MULT}\, n\ (\textbf{Y}\ \textbf{FACTf}\,(\textbf{PRED}\, n)))\ \textbf{FIVE}\\
+    &=[\textbf{FIVE}/n]\textbf{IF}\,(\textbf{ISZERO}\, n)\, \textbf{ONE}\,(\textbf{MULT}\, n\ (\textbf{Y}\ \textbf{FACTf}\,(\textbf{PRED}\, n)))\\
+    &= \textbf{IF}\,(\textbf{ISZERO}\, \textbf{FIVE})\, \textbf{ONE}\,(\textbf{MULT}\, \textbf{FIVE}\, (\textbf{Y}\ \textbf{FACTf}\,(\textbf{PRED}\, \textbf{FIVE})))\\
+    &= \textbf{MULT}\, \textbf{FIVE}\, (\textbf{Y}\, \textbf{FACTf}\ \textbf{FOUR})
+  \end{split}
+\end{displaymath}
+最后我们有：
+\begin{displaymath}
+  \textbf{FACT}\ \textbf{FIVE} \equiv \textbf{Y}\ \textbf{FACTf}\ \textbf{FIVE} \equiv \textbf{MULT}\ \textbf{FIVE}\ (\textbf{Y}\ \textbf{FACTf}\ \textbf{FOUR})
+\end{displaymath}
+所以我们利用不动点组合子\textbf{Y}，成功让计算\textbf{FIVE}的阶乘化为计算\textbf{MULT FIVE (FACT FOUR)}，如果继续进行下去，我们就可以得到最终结果。
 \end{document}
 
