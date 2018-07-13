@@ -1,0 +1,317 @@
+---
+title: "陈希孺概率论与数理统计读书笔记"
+author:
+  - RogerClark
+documentclass: ctexart
+output:
+  rticles::ctex:
+    fig_caption: yes
+    number_sections: yes
+    toc: yes
+classoption: "hyperref,"
+---
+```{r eval=T, echo=F,warning=F,message=F}
+library(tidyverse)
+library(latex2exp)
+```
+
+\newtheorem{Definition}{\hspace{2em}定义}
+\newtheorem{theorem}{\hspace{2em}定理}
+\newtheorem{lemma}{\hspace{2em}例子}
+\newtheorem{Proof}{证明}
+
+\section{事件的概率}
+
+（暂空）
+
+\section{随机变量及概率分布}
+
+（暂空）
+
+\section{随机变量的数字特征}
+
+（暂空）
+
+\section{参数估计}
+
+（暂空）
+
+\section{假设检验}
+
+\subsection{问题的提法和基本概念}
+
+\subsubsection{问题的提法}
+
+我们常常需要对取自总体的样本的一些参数，如均值，标准差进行判断（检验），设有如下问题：
+
+$X_1, X_2, \cdots, X_n$是取自一正态分布总体$N(\theta, \sigma^2)$的样本，现在需根据这个样本来判断：总体的均值是否有$\theta \geq \theta_0$？
+
+在这里$\theta$是一个未知的随机变量，命题$\theta \geq \theta_0$则称为一个“统计假设”，假设检验就是围绕这一事先预定好的假设来进行的。
+
+由此引出问题的提法中的几个重要概念：
+
+*1. 原假设和对立假设*
+
+常把被判断或检验的假设称之为原假设，原假设记为$H_0$，上面的例子中原假设可以这样表述：
+
+\begin{displaymath}
+H_0: \{\theta | \theta \geq \theta_0\}
+\end{displaymath}
+
+另外一个与原假设对立的假设称为“对立假设”或“备择假设”，它与零假设互补组成整个假设空间，常把对立假设记为$H_1$，上面的例子的对立假设可以这样表述：
+
+\begin{displaymath}
+H_1: \{\theta | \theta < \theta_0\}
+\end{displaymath}
+
+原假设和对立假设成对出现，并且概率上是互斥事件，不会同时发生，假设检验的工作就是判断原假设和对立假设的可能性，并最后选择一个假设来接受。由此引出如下概念。
+
+*2. 检验统计量、接受域、否定域、临界域和临界值*
+
+根据上面的检验问题，提出的假设（简写）：
+
+\begin{displaymath}
+\begin{split}
+&H_0: \theta \geq \theta_0 \\
+&H_1: \theta < \theta_0
+\end{split}
+\end{displaymath}
+
+由于在上面的假设中，$\theta$是一个未知的参数，我们需要一个统计量$Z$来估计$\theta$，然后看这个统计量$Z$是否满足上面的统计假设。直观上，样本的均值$\bar{X}$是一个不错的用来估计总体$\theta$的统计量，于是我们的统计假设问题就变成了这样一个检验流程：
+
+\begin{displaymath}
+\begin{split}
+&\mbox{如果}\bar{X} \geq C,\mbox{接受}H_0\\
+&\mbox{如果}\bar{X} < C,\mbox{拒绝}H_0
+\end{split}
+\end{displaymath}
+
+很明显，如果我们计算得到的$\bar{X}$有$\bar{X} \geq C$，此时原假设$H_0$正确，我们接受它，相反，如果$\bar{X} < C$，此时原假设$H_0$错误，我们否定它并接受备择假设$H_1$。以上的这一套操作准则，就称之为对$\theta$的*检验*。这里用的$\bar{X}$就是一个*检验统计量*
+
+正如$\bar{X} = \frac{\sum_{i=1} ^ {n} X_i}{n}$，检验统计量由样本$X_1, \cdots, X_n$决定，这样一来，原假设是否接受也由样本来决定。把使得原假设接受的那些样本组成的区域成为这个检验的*接受域*，而把使原假设被否定的那些样本组成的区域则成为检验的*否定域*。
+
+这里把接受域和否定域记为：
+
+\begin{displaymath}
+\begin{split}
+A &= \{(X_1, \cdots, X_n)| X_1 + \cdots + X_n \geq nC\}\\
+R &= \{(X_1, \cdots, X_n) | X_1 + \cdots + X_n < nC\}
+\end{split}
+\end{displaymath}
+
+可见，当这里的检验中$C$有重要作用，当$\bar{X}$的值越过这一个界限，结论就由接受变成否定，这个$C$称之为检验统计量$\bar{X}$的*临界值*。
+
+### 功效函数
+
+原假设的接受与否要看检验统计量是否越过了临界值，而检验统计量是由样本决定的，由于样本的随机性，检验统计量是一个随机变量。因此上面的例子中$\bar{X}$就是一个随机变量。因此，可以知道，原假设$H_0: \theta \geq \theta_0$被否定的概率为：
+
+\begin{equation}
+\beta_{\Phi}(\theta) = P_{\theta}(\bar{X} < C)\label{gongxiao}
+\end{equation}
+
+由于样本$X_1,\cdots, X_n$之间独立，且来自同一总体$N(\theta, \sigma^2)$，所以由正态分布的性质：若$X_1, \cdots, X_n$相互独立，且分别服从正态分布$N(\theta_1, \sigma_1^2), \cdots, N(\theta_n, \sigma_n^2)$，那么随机变量$X_1 + \cdots + X_n$的分布满足正态分布$N(\theta_1 + \cdots + \theta_n, \sigma_1^2 + \cdots + \sigma_n^2)$，可以对\eqref{gongxiao}进行化简。
+
+\begin{equation}
+\begin{split}
+\beta_{\Phi}(\theta) &= P_{\theta}(\bar{X} < C)\\
+&= P_{\theta}(X_1 + X_2 + \cdots + X_n < nC)\\
+&= \Phi_{(n\theta, n\sigma^2)}(nC)\label{gongxiaohanshu}
+\end{split}
+\end{equation}
+
+可以看到，式\eqref{gongxiaohanshu}就是参数为$N(n\theta, n\sigma^2)$的正态分布的累积分布函数，这个函数的取值完全和$\theta$与$\sigma$有关，这里假设$\sigma$是已知的，那么就只和$\theta$有关了。
+
+式\eqref{gongxiaohanshu}就是一个检验$\Phi$的功效函数，由此给出功效函数的一般定义：
+
+\begin{Definition}
+\label{gongxiaodingyi}
+设总体分布包含若干个未知参数$\theta_1,\cdots, \theta_k$，$H_0$是关于这些参数的一个原假设，设有了样本$X_1,\cdots,X_n$，而$\Phi$是针对这些样本而做的一个检验，则称检验$\Phi$的功效函数为:
+\begin{equation}
+\beta_{\Phi} = P_{\theta_1, \cdots, \theta_k}(\Phi: \mbox{拒绝}\quad H_0)\label{beta_phi}
+\end{equation}
+\end{Definition}
+
+可见，式\eqref{beta_phi}是$\theta_0,\cdots,\theta_k$的函数。
+
+功效函数$\beta_{\Phi}(\theta_1,\cdots,\theta_k)$计算的是在检验$\Phi$下，原假设$H_0$被否定的概率，另一种方式就是说假设$H_1$被接受的概率，我们希望功效函数最好能满足如下性质：
+
+如果能有一组$\theta_0,\cdots,\theta_k$使得$H_0$成立，也就是说当$H_0$为真，$H_1$位假，我们不希望否定$H_0$,，那么我们希望$\beta_{\Phi}(\theta_1,\cdots,\theta_k)$能尽量小，这样就能尽量小的概率否定$H_0$。反过来，若有一组$\theta_0,\cdots,\theta_k$使得$H_1$成立，也就是说当$H_0$为假，$H_1$位真时，我们不希望接受$H_0$，那么我们希望，我们希望$\beta_{\Phi}(\theta_1,\cdots,\theta_k)$能尽量的大，这样就能以尽量大的概率否定$H_0$，或者说接受$H_1$。
+
+值得注意，“功效”一词在$\theta_1, \cdots, \theta_k$使得对立假设成立时更为恰当，因当$\theta_1, \cdots, \theta_k$属于对立假设时，$\beta_{\Phi}(\theta_1,\cdots,\theta_k)$应当尽可能大。而当$\theta_1,\cdots,\theta_k$属于原假设时，$\beta_{\Phi}(\theta_1,\cdots,\theta_k)$取小值，这时叫做“功效”就不恰当。
+
+\subsubsection{两类错误，检验的水平}
+
+通过功效函数$\beta_{\Phi}$来对假设$H_0$进行检验时，由于检验的结果是一个概率事件，那么可能出现这两种情况：
+
+1. $H_0$实际是正确的（$H_1$实际上错误），但我们却否定了$H_0$。
+2. $H_0$实际是错误的（$H_1$实际上正确），但我们却接受了$H_1$。
+
+由于检验结果是和总体的分布的参数$N(\theta,\sigma^2)$有关的，因此犯错误的类型也和这些参数有关，这一点在后面会详细解释。由此总结出第一类错误和第二类错误的数学形式：
+
+\begin{equation}
+\begin{split}
+&\alpha_{1\Phi}(\theta_1,\cdots,\theta_k) =
+\left\{
+\begin{split}
+&\beta_{\Phi}(\theta_1,\cdots,\theta_k),\quad (\theta_1,\cdots,\theta_k) \in H_0\\
+&0,\quad (\theta_1,\cdots,\theta_k) \in H_1
+\end{split}
+\right.\\
+&\alpha_{2\Phi}(\theta_1,\cdots,\theta_k) =
+\left\{
+\begin{split}
+&0,\quad (\theta_1,\cdots,\theta_k) \in H_0\\
+&1 - \beta_{\Phi}(\theta_1,\cdots,\theta_k),\quad (\theta_1,\cdots,\theta_k) \in H_1
+\end{split}
+\right.
+\end{split}
+\end{equation}
+
+一般的，更希望一类错误的概率更小，这时会定出一个$\alpha$来限定一类错误小于它，再在此基础上尽量减少第二类错误。由此给出*检验水平*的定义
+
+\begin{Definition}
+\label{jianyanshuiping}
+设$\Phi$是原假设$H_0$下的一个检验，$\beta_{\Phi}(\theta_1,\cdots,\theta_k)$为其功效函数，$\alpha$满足$\alpha \in [0, 1]$，如果：
+\begin{equation}
+\label{jysp-eq}
+\beta_{\Phi}(\theta_1,\cdots,\theta_k) \leq \alpha \quad (\forall (\theta_1,\cdots,\theta_k) \in H_0)
+\end{equation}
+则称$\Phi$为$H_0$的水平为$\alpha$的检验。
+\end{Definition}
+
+可以看到水平$\alpha$实际上指是功效函数$\beta_{\Phi}(\theta_1,\cdots,\theta_k)$的值在区间$H_0$上永远小于我们给定的$\alpha$，如果这个条件不成立，那么$\alpha$就不是这个检验$\Phi$在$H_0$上的一个水平了。（功效函数的目的就是首先保证一类错误要小于一定水平$\alpha$）。
+
+\subsubsection{一致最优检验}
+
+检验的水平让检验函数在$(\theta_0,\cdots,\theta_k) \in H_0$时小于指定的$\alpha$，使得第一类错误发生的概率小于$\alpha$。同样的，当$(\theta_0,\cdots,\theta_k) \in H_1$时，我们可以给出一致最优检验的定义：
+
+\begin{Definition}
+\label{yizhizuiyou}
+设$\Phi$为一个水平为$\alpha$的检验，若对其他任何一个水平为$\alpha$的检验$g$，必有
+\begin{equation}
+\beta_{\Phi}(\theta_1,\cdots,\theta_k) \geq \beta_{g}(\theta_0,\cdots,\theta_k) \quad (\forall (\theta_0,\cdots,\theta_k) \in H_1)
+\end{equation}
+\end{Definition}
+可以看到，根据\eqref{yizhizuiyou}的定义，一致最优检验检验不仅仅在$H_0$上满足水平$\alpha$的检验，在$H_1$上，根据第二类错误概率定义$\alpha_{2 \Phi}(\theta_0,\cdots,\theta_k) = 1 - \beta_{\Phi}(\theta_0,\cdots,\theta_k)$，它发生二类错误的概率也是所有水平为$\alpha$的检验中最小的。
+
+用图来描述，假设有三个功效函数$\Phi_1,\Phi_2,\Phi_3$，他们都是针对假设$H_0:\theta > \theta_0,H_1:\theta \leq \theta_0$的两个检验，如果$\Phi_1$是一致最优检验，那么它的功效函数必然满足如下样子：
+
+```{r scatter,eval=T, echo=F, warning=F, error=F, fig.height=3, fig.width=4}
+par(mar = c(2, 2, .1, .1), las = 1)
+th0 <- 20
+x <- c(-100:100)
+y1 <- -pnorm(x, mean=th0, sd=20) + 0.5
+y2 <- -pnorm(x, mean=th0, sd=30) + 0.5
+y3 <- -pnorm(x, mean=th0, sd=40) + 0.5
+
+data <- data.frame(x, y1, y2, y3)
+fig <- ggplot(data) + geom_line(aes(x, y1), colour="red",size=1.5) + geom_line(aes(x, y2), colour="blue") + geom_line(aes(x, y3), colour="green") + geom_vline(xintercept = th0) +scale_x_continuous(breaks=c(-100, -50, 0, th0, 50, 100), labels = c("", TeX("$H_1:\\theta \\leq \\theta_0$"), "0", TeX("$\\theta_0$"), TeX("$H_0:\\theta > \\theta_0$"), "")) + scale_y_continuous(breaks=c(0.5, 0, -0.5), labels=c("", TeX("$\\alpha$"), "")) + xlab(TeX("$\\theta$")) + ylab(TeX("$\\beta_{\\Phi}(\\theta)$"))
+fig
+```
+
+可以看到，三个功效函数在$\theta>\theta_0$处都满足水平为$\alpha$的检验，而在$\theta \leq \theta_0$处，标红色的功效函数明显取更大的$\beta_{\Phi}(\theta)$，也就是说它第二类错误的概率是三个功效函数中最小的，此时才能称之为*一致最优检验*
+
+一直最优检验要求功效函数在$H_1$上处处出现第二类错误概率最小，这是个很严格的条件。实际上许多针对同一假设的检验之间无法找到一个一致最优检验，即它们之中的任何一个都不能达到“处处”最小的要求，反而是，在某一区间内，$\Phi_1$是最小的，而到了另外一个区间内$\Phi_2$是最小的。
+
+\subsection{重要参数检验}
+
+基于参数的点估计是一个直观的检验方法，因为要检验的参数是未知量，往往通过样本来得出一个参数的估计量用做检验，点估计是最常用的检验统计量。下面给出在已知总体分布情况下，对总体的未知参数设计检验的过程。
+
+\subsubsection{正态总体均值的检验}
+
+$X_1, X_2, \cdots, X_n$是取自一正态分布总体$N(\theta, \sigma^2)$的样本，针对总体的均值，先定一个$\theta_0$，有常见如下假设检验问题：
+
+1. $H_0:\theta \geq \theta_0$，$H_1:\theta < \theta_0$；
+2. $H_0:\theta \leq \theta_0$，$H_1:\theta > \theta_0$；
+3. $H_0:\theta = \theta_0$，$H_1:\theta \neq \theta_0$；
+
+问题1和问题2形式上接近，问题3则有略微的不同，先对问题1设计检验，这里有两种情况：总体方差已知和总体方差未知。
+
+*1.方差$\sigma^2$已知*
+
+如果问题如上文1中所示，我们用点估计$\bar{X}$来估计总体的方差，直观上，我们可认为$\bar{X}$越大的情况，越有可能满足$H_0$，至于$\bar{X}$要大到什么程度，这里用$C$来表示，这个$C$是在一开始不知道的量。由此提出如下一个检验方法
+\begin{equation}
+\Phi: \mbox{当}\bar{X} \geq C,\mbox{接受原假设},\mbox{当}\bar{X} < C\mbox{否定原假设}
+\end{equation}
+
+接着给出这个检验的功效函数，考虑功效函数的定义\eqref{gongxiaodingyi}，又因总体分布为$N(\theta, \sigma^2)$的分布，这时统计量$\frac{\sqrt{n}(\bar{X} - \theta)}{\sigma} \sim N(0, 1)$，于是功效函数可以化为：
+\begin{equation}
+\begin{split}
+\beta_{\Phi}(\theta)&=P_{\theta}(\bar{X} < C)\\
+&= P_{\theta}(\frac{\sqrt{n}(\bar{X} - \theta)}{\sigma} < \frac{\sqrt{n}(C-\theta)}{\sigma})\\
+&= \Phi(\frac{\sqrt{n}(C-\theta)}{\sigma})
+\end{split}
+\end{equation}
+
+若要让功效函数满足其检验水平为$\alpha$，即想让我们这个检验第一类错误概率为$\alpha$，根据其定义\eqref{jianyanshuiping}可知，这个函数$\Phi(\frac{\sqrt{n}(C-\theta)}{\sigma})$和$\theta$有关，当$\theta$增加，函数值变小，可见函数$\Phi$在$\theta \in H_0:\{\theta|\theta \geq \theta_0\}$上单调递减，由此给出下式：
+
+\begin{equation}
+\label{lingjiezhi}
+\begin{split}
+&\beta_{\Phi}(\theta)=\Phi(\frac{\sqrt{n}(C-\theta)}{\sigma}) \leq \alpha\quad \forall \theta \in H_0:\{\theta|\theta \geq \theta_0\}\\
+&\mbox{相当于}\\
+&\frac{\sqrt{n}(C-\theta)}{\sigma} \geq u_{1-\alpha}\\
+&\mbox{让}\theta = \theta_0\\
+&\frac{\sqrt{n}(C-\theta_0)}{\sigma} = u_{1-\alpha} = -u_{\alpha}\\
+&\mbox{由此可得：}\\
+&C = \theta_0 - \frac{\sigma u_{\alpha}}{\sqrt{n}}\\
+\end{split}
+\end{equation}
+
+这样就得到了功效函数$\beta_{\Phi}(\theta)$在水平$\alpha$下检验统计量$\bar{X}$的临界值$C$，把$C$带回，得到检验$\Phi$的功效函数的完整形式。
+\begin{equation}
+\label{wanzhenggongxiao}
+\beta_{\Phi}(\theta) = \Phi(\frac{\sqrt{n}(\theta_0-\theta)}{\sigma} - u_{\alpha})
+\end{equation}
+
+下面给出一个例子，并绘制出这个例子的功效函数。
+```{r sample1, eval=T, echo=F, warning=F, message=F}
+set.seed(1234)
+th0 <- 10
+th_real <- 15
+th_set <- seq(0, 20, 0.1)
+sd_real <- 1
+n <- 10
+alpha <- 0.05
+u <- qnorm(alpha, lower.tail = F)
+x_sample <- rnorm(n, mean=th_real, sd=sd_real)
+z_stat <- sqrt(n)*(th0 - th_set) - u
+c <- th0 - (sd_real*u/sqrt(n))
+y <- pnorm(z_stat)
+```
+\begin{lemma}
+已知样本`r x_sample`来自总体$N(\theta, 1)$，考虑假设检验问题$H_0:\theta \geq 10,H_1:\theta < 10$,在检验水平$\alpha=0.05$情况下的情况。
+\end{lemma}
+根据\eqref{lingjiezhi}，直接计算临界值$C$:
+\begin{displaymath}
+\begin{split}
+C &= \theta_0 - \frac{\sigma u_{0.05}}{\sqrt{n}}\\
+&= 10 - \frac{1 \times 1.644854}{\sqrt{10}} = `r c`
+\end{split}
+\end{displaymath}
+
+显然，样本的均值$\bar{X}$为`r mean(x_sample)`，满足$\bar{X} \geq `r c`$，接受原假设$H_0: \theta \geq 10$，事实上，以上的数据取自正态分布$N(`r th_real`, `sd_real`)$，检验的结果符合总体的分布情况。
+
+下面考虑更一般的，绘制出该检验下的功效函数图像：
+
+```{r lizitu, eval=T, echo=F, warning=F, message=F, error=F,fig.height=3, fig.width=4}
+fig_lizitu <- ggplot(data = data.frame(th_set, y)) + geom_line(aes(th_set, y), colour="blue", size=0.8) + geom_hline(yintercept = 0.05)
+fig_lizitu <- fig_lizitu + xlab(TeX("$\\theta$")) + ylab(TeX("$\\beta_{\\Phi}(\\theta)$"))
+x_label_h1 <- TeX("$H_1:\\theta<10$")
+x_label_h0 <- TeX("$H_0:\\theta \\geq 10$")
+x_label_th0 <- TeX("$\\theta_0=10$")
+fig_lizitu <- fig_lizitu + scale_x_continuous(labels = c("", x_label_h1, x_label_th0, x_label_h0, ""))
+fig_lizitu
+```
+
+仔细观察功效功效函数和它的图像，可以得出如下结论
+
+1. 当分布的真实值$\theta$越大时，越容易满足零假设$H_0:\theta\geq 10$，此时功效函数急剧下降，最后趋近于零，说明在越大的$\theta$下，零假设被拒绝的概率是十分小，犯第一类错误的概率十分小。相反的，越小的$\theta$，越容易远离零假设$H_0$，而满足备择假设$H_1:\theta < 10$，此时功效函数急剧上升，说明在越小的$\theta$下，零假设会以很大的概率被拒绝，犯第二类错误的概率也很小（$\alpha_{2\Phi}(\theta)=1-\beta_{\Phi}(\theta)$）。
+
+2. 当分布的真实值$\theta < 10$，但$\theta$与10差距很小时，可以看到功效函数在10附近的变化很急剧，此时的$\beta_{\Phi}(\theta)$与我们预先设计的水平$\alpha=0.05$，接近，这是犯第二类错误的概率就比较大了$\alpha_{2\Phi}(\theta)\simeq 1-0.05=0.95$。可见若$\theta$很接近我们预先设定$\theta_0$，功效函数的性能就不佳了，此时虽然能保证第一类错误的概率是一个很低的值，但第二类错误的概率却大大上升了。
+
+*2.方差$\sigma^2$未知*
+
+
+
+
