@@ -13,6 +13,10 @@ classoption: "hyperref,"
 ```{r eval=T, echo=F,warning=F,message=F}
 library(tidyverse)
 library(latex2exp)
+library(grid)
+vplayout <- function(x, y){
+  viewport(layout.pos.row=x, layout.pos.col = y)
+}
 ```
 
 \newtheorem{Definition}{\hspace{2em}定义}
@@ -250,7 +254,7 @@ $X_1, X_2, \cdots, X_n$是取自一正态分布总体$N(\theta, \sigma^2)$的样
 \begin{split}
 &\beta_{\Phi}(\theta)=\Phi(\frac{\sqrt{n}(C-\theta)}{\sigma}) \leq \alpha\quad \forall \theta \in H_0:\{\theta|\theta \geq \theta_0\}\\
 &\mbox{相当于}\\
-&\frac{\sqrt{n}(C-\theta)}{\sigma} \geq u_{1-\alpha}\\
+&\frac{\sqrt{n}(C-\theta)}{\sigma} \leq u_{1-\alpha}\\
 &\mbox{让}\theta = \theta_0\\
 &\frac{\sqrt{n}(C-\theta_0)}{\sigma} = u_{1-\alpha} = -u_{\alpha}\\
 &\mbox{由此可得：}\\
@@ -268,7 +272,7 @@ $X_1, X_2, \cdots, X_n$是取自一正态分布总体$N(\theta, \sigma^2)$的样
 ```{r sample1, eval=T, echo=F, warning=F, message=F}
 set.seed(1234)
 th0 <- 10
-th_real <- 15
+th_real <- 11
 th_set <- seq(0, 20, 0.1)
 sd_real <- 1
 n <- 10
@@ -290,17 +294,19 @@ C &= \theta_0 - \frac{\sigma u_{0.05}}{\sqrt{n}}\\
 \end{split}
 \end{displaymath}
 
-显然，样本的均值$\bar{X}$为`r mean(x_sample)`，满足$\bar{X} \geq `r c`$，接受原假设$H_0: \theta \geq 10$，事实上，以上的数据取自正态分布$N(`r th_real`, `sd_real`)$，检验的结果符合总体的分布情况。
+显然，样本的均值$\bar{X}$为`r mean(x_sample)`，满足$\bar{X} \geq `r c`$，接受原假设$H_0: \theta \geq 10$，事实上，以上的数据取自正态分布$N(`r th_real`, `r sd_real`)$，检验的结果符合总体的分布情况。
 
 下面考虑更一般的，绘制出该检验下的功效函数图像：
 
-```{r lizitu, eval=T, echo=F, warning=F, message=F, error=F,fig.height=3, fig.width=4}
-fig_lizitu <- ggplot(data = data.frame(th_set, y)) + geom_line(aes(th_set, y), colour="blue", size=0.8) + geom_hline(yintercept = 0.05)
+```{r lizitu, eval=T, echo=F, warning=F, message=F, error=F,fig.height=3, fig.width=5.5}
+fig_lizitu <- ggplot(data = data.frame(th_set, y)) + geom_line(aes(th_set, y), colour="blue", size=0.8) + geom_hline(yintercept = 0.05) + geom_hline(yintercept = 0.9, colour="red") + geom_vline(xintercept = 9.1, colour="red")
 fig_lizitu <- fig_lizitu + xlab(TeX("$\\theta$")) + ylab(TeX("$\\beta_{\\Phi}(\\theta)$"))
 x_label_h1 <- TeX("$H_1:\\theta<10$")
 x_label_h0 <- TeX("$H_0:\\theta \\geq 10$")
 x_label_th0 <- TeX("$\\theta_0=10$")
-fig_lizitu <- fig_lizitu + scale_x_continuous(labels = c("", x_label_h1, x_label_th0, x_label_h0, ""))
+x_label_th1 <- TeX("$\\theta_1$")
+fig_lizitu <- fig_lizitu + scale_y_continuous(breaks = c(0.00, 0.05, 0.25, 0.5, 0.75, 0.90, 1.00), labels=c("0.00", TeX("$\\alpha$"), "0.25", "0.5", "0.75", TeX("$1 - \\beta$"), "1.00"))
+fig_lizitu <- fig_lizitu + scale_x_continuous(labels = c("", x_label_h1, x_label_th1, x_label_th0, x_label_h0, ""), breaks=c(0.0, 5.0, 9.1, 10.0, 15.0, 20.0))
 fig_lizitu
 ```
 
@@ -310,8 +316,245 @@ fig_lizitu
 
 2. 当分布的真实值$\theta < 10$，但$\theta$与10差距很小时，可以看到功效函数在10附近的变化很急剧，此时的$\beta_{\Phi}(\theta)$与我们预先设计的水平$\alpha=0.05$，接近，这是犯第二类错误的概率就比较大了$\alpha_{2\Phi}(\theta)\simeq 1-0.05=0.95$。可见若$\theta$很接近我们预先设定$\theta_0$，功效函数的性能就不佳了，此时虽然能保证第一类错误的概率是一个很低的值，但第二类错误的概率却大大上升了。
 
+3. 如果提出要求，让犯第二类错误的概率小于指定的$\beta$，即让$H_1$正确，但被拒绝的概率要小于$\beta$。这等价于有:
+
+\begin{equation}
+\label{erleigongxiao}
+1 - \beta_{\Phi}(\theta) < \beta \Leftrightarrow \beta_{\Phi}(\theta) \geq 1 - \beta \m (\forall \theta \in {\theta < \theta_0})
+\end{equation}
+
+我们一般希望$\beta$取一个很小的值，比如$0.1$，但实际上根据函数的性质，这一点在整个$H_1$上无法实现。当$\theta < \theta_0$但十分接近$\theta_0$时，$\beta_{\Phi}(\theta) \simeq \alpha$，显然由于$\alpha$和$\beta$都是一个很小的值，那么$\beta_{\Phi}(\theta) \simeq \alpha \geq 1-\beta$是无法实现的。但是如果稍微放宽一点限制，让$\theta$小于某一个$\theta_1 < \theta_0$，因为函数在$\theta_0$附近急剧变化，稍小一点的$\theta < \theta_1$能让$\beta_{\Phi}(\theta) \geq 1 - \beta$很容易满足。
+
+$\beta_{\Phi}(\theta)$中另外两个重要参数是总体分布的$\theta$和$\sigma$，在固定$\theta$情况下，它们对检验的结果有重要影响，下面给出它们的函数图像
+
+```{r eval=T, echo=F, warning=F, message=F, error=F,fig.height=2.5, fig.width=4}
+#set.seed(1234)
+th0 <- 10
+th_real <- 8
+sd_set <- seq(1, 10, 0.1)
+n <- 10
+alpha <- 0.05
+u <- qnorm(alpha, lower.tail = F)
+z_stat <- (sqrt(n)*(th0 - th_real)/sd_set) - u
+y <- pnorm(z_stat)
+
+fig_sd_zstat <- ggplot(data=data.frame(sd_set, z_stat)) + geom_line(aes(x=sd_set, z_stat), colour = "blue") + xlab(TeX("$\\sigma$")) + ylab(TeX("$Z$")) + scale_x_continuous(labels = c("1", "", "5.0", "", "10.0"))
+fig_zstat_y <- ggplot(data=data.frame(z_stat, y)) + geom_line(aes(z_stat, y), colour="blue")+xlab(TeX("$Z$")) + ylab(TeX("$\\beta_{\\Phi}(\\theta)$"))
+fig_sd_y <- ggplot(data=data.frame(sd_set, y)) + geom_line(aes(sd_set, y), colour="blue") + xlab(TeX("$\\sigma$")) + ylab(TeX("$\\beta_{\\Phi}(\\theta)$")) + scale_x_continuous(labels = c("1", "", "5.0", "", "10.0"))
+
+grid.newpage()
+pushViewport(viewport(layout=grid.layout(1, 3)))
+
+print(fig_sd_zstat, vp=vplayout(1, 1))
+print(fig_zstat_y, vp=vplayout(1, 2))
+print(fig_sd_y, vp=vplayout(1, 3))
+```
+
+1. 由上面的三幅图像可知，对某个固定的$\theta < 10$，$\sigma$越大，$Z=\frac{\sqrt{n}(\theta_0-\theta)}{\sigma}-u_{\alpha}$越小，由第二图，分布函数是增函数，可知$\beta_{\Phi}(\theta)$越小。越有可能出现第二类错误。这说明误差越大，$\theta$与$\theta_0=10$越不容易分清，这样就越容易犯错。
+
+```{r eval=T, echo=F, warning=F, message=F, error=F,fig.height=2.5, fig.width=4}
+#set.seed(1234)
+th0 <- 15.5
+th_real <- 15
+sd_real <- 1
+n <- 10
+alpha_set <- seq(0.01, 0.99, 0.01)
+u_set <- qnorm(alpha_set, lower.tail = F)
+z_stat <- (sqrt(n)*(th0 - th_real)/sd_real) - u_set
+y <- pnorm(z_stat)
+
+fig_alpha_zstat <- ggplot(data=data.frame(alpha_set, z_stat)) + geom_line(aes(x=alpha_set, z_stat), colour = "blue") + xlab(TeX("$\\alpha$")) + ylab(TeX("$Z$")) + scale_x_continuous(labels = c("0.0", "", "0.5", "", "1.0"))
+fig_zstat_y <- ggplot(data=data.frame(z_stat, y)) + geom_line(aes(z_stat, y), colour="blue")+xlab(TeX("$Z$")) + ylab(TeX("$\\beta_{\\Phi}(\\theta)$"))
+fig_alpha_y <- ggplot(data=data.frame(alpha_set, y)) + geom_line(aes(alpha_set, y), colour="blue") + xlab(TeX("$\\alpha$")) + ylab(TeX("$\\beta_{\\Phi}(\\theta)$"))+scale_x_continuous(labels = c("0.0", "", "0.5", "", "1.0"))
+
+grid.newpage()
+pushViewport(viewport(layout=grid.layout(1, 3)))
+
+print(fig_alpha_zstat, vp=vplayout(1, 1))
+print(fig_zstat_y, vp=vplayout(1, 2))
+print(fig_alpha_y, vp=vplayout(1, 3))
+
+```
+
+2. 增大功效$\alpha$，$u_{\alpha}$就变小了，这样$\beta_{\Phi}(\theta)$就更大，所以这种情况下出现一类错误的可能性就变大了，反过来，二类错误的可能性就小了。可见$\alpha$的选择无法兼顾让两种都小，小的$\alpha$使得第一类错误很小，但与此同时出现第二类错误的可能就变大了。
+
+问题2$H_0:\theta \leq \theta_0$，$H_1:\theta > \theta_0$的检验和1十分相似，这里不展开讨论，下面开始讨论问题3即$H_0:\theta = \theta_0,H_1:\theta \neq \theta_0$的检验。直观上看，仍然采用点估计$\bar{X}$来做检验统计量，我们可以认为当$\bar{X}$与$\theta_0$比较接近时，$H_0$成立，反之，距离较远则否定$H_1$，由此得出问题3的一个检验法：
+
+\begin{equation}
+\label{shuangcejianyan}
+\Phi^{''}:\mbox{当}|\bar{X} - \theta_0| \leq C \mbox{时接受}H_0,\mbox{反之则否定}H_0.
+\end{equation}
+
+根据功效函数的定义\eqref{gongxiaodingyi}，直接写出检验$\Phi^{''}$的功效函数：
+
+\begin{equation}
+\label{shuangcegongxiao}
+\begin{split}
+\beta_{\Phi^{''}}(\theta) &= P_{\theta}(|\bar{X}-\theta| > C)\\
+&= P_{\theta}(\{\frac{(\bar{X}-\theta)\sqrt{n}}{\sigma} > \frac{C\sqrt{n}}{\sigma}\} \cup \{\frac{(\bar{X}-\theta)\sqrt{n}}{\sigma} < -\frac{C\sqrt{n}}{\sigma}\})\\
+&= 1 - \Phi(\frac{C\sqrt{n}}{\sigma}) + \Phi(-\frac{C\sqrt{n}}{\sigma})\\
+&= 2 - 2\Phi(\frac{C\sqrt{n}}{\sigma})
+\end{split}
+\end{equation}
+
+接着，根据检验水平的定义\eqref{jianyanshuiping}，写出在水平$\alpha$下的临界值$C$的推导过程：
+
+\begin{displaymath}
+\begin{split}
+&\Phi(\frac{C\sqrt{n}}{\sigma}) = 2 - 2\Phi(\frac{C\sqrt{n}}{\sigma}) \leq \alpha \quad \forall \theta \in H_0:\{\theta|\theta = \theta_0\}\\
+&\mbox{相当于}\\
+&\Phi(\frac{C\sqrt{n}}{\sigma}) \geq 1 - \frac{\alpha}{2}\\
+&\mbox{由与函数}\Phi \mbox{单调递增}可知\\
+& \frac{C\sqrt{n}}{\sigma} = u_{\frac{\alpha}{2}}
+\end{split}
+\end{displaymath}
+
+由此得出临界值$C$的值为：
+
+\begin{equation}
+C = \frac{u_{\frac{\alpha}{2}}\sigma}{\sqrt{n}}
+\end{equation}
+
+把$C$带回\eqref{shuangcejianyan}中，得到$\bar{X}$的接受域为
+\begin{equation}
+\theta_0 - \frac{\sigma u_{\frac{\alpha}{2}}}{\sqrt{n}} \leq \bar{X} \leq \theta_0 + \frac{\sigma u_{\frac{\alpha}{2}}}{\sqrt{n}}
+\end{equation}
+
+只要$\bar{X}$落入这个范围，我们就接受$H_0:\theta=\theta_0$，否则就拒绝$H_0$。
+
+把$C$带入功效函数\eqref{shuangcegongxiao}中，可以得到$\Phi^{''}$的功效函数：
+\begin{equation}
+\begin{split}
+\beta_{\Phi^{''}}(\theta) &= 2 - 2\Phi(u_{\frac{\alpha}{2}})\\
+&= 2 - 2(1 - \frac{\alpha}{2})\\
+&= \alpha
+\end{split}
+\end{equation}
+
+很显然，功效函数不含未知的参数$\theta$，也与样本没有关系，只和我们预先指定的水平$\alpha$有关，这说明在这种检验下，*一致最优检验*是不存在的。
+
 *2.方差$\sigma^2$未知*
 
+首先我们看方差已知时考虑检验问题1的情形，由\eqref{lingjiezhi}，检验$\Phi$写成:
 
+\begin{displaymath}
+\Phi: \mbox{当}\bar{X} \geq \theta_0 - \frac{\sigma u_{\alpha}}{\sqrt{n}},\mbox{接受原假设},\mbox{当}\bar{X} < \theta_0 - \frac{\sigma u_{\alpha}}{\sqrt{n}}\mbox{否定原假设}
+\end{displaymath}
 
+变换一下形式得到：
+\begin{displaymath}
+\Phi: \mbox{当}\frac{\sqrt{n}(\bar{X}-\theta_0)}{\sigma} \geq -u_{\alpha},\mbox{接受原假设},\mbox{反之则否定原假设}
+\end{displaymath}
+
+可以看到随机变量$\frac{\sqrt{n}(\bar{X}-\theta_0)}{\sigma}$满足$N(0, 1)$的正态分布，但在总体方差未知情况，我们无法已知$\sigma$，如果我们用点估计$S^2 = \sum_{i=1}^n\frac{(X_i - \bar{X})^2}{n-1}$来估计$\sigma^2$，分布就发生了变化。我们这里先写明此时$\frac{\sqrt{n}(\bar{X}-\theta_0)}{\sigma}$满足自由度为$n-1$的$t$分布，下面对这一点给出证明。
+
+若$X$与$Y$相互独立，且有$X \sim N(0, 1)$，$Y \sim \chi_n^2$，又设$\delta$为常数，则随机变量$(X+\delta)/\sqrt{\frac{1}{n}Y}$的分布称为自由度为n，非中心参数为$\delta$的非中心$t$分布。记为$Z \sim t_{n,\delta}$，分布函数记为$F_{n,\delta}(x)$，若有一组符合$t$分布的随机变量$Z_1, Z_2, Z_3$，它们的满足$\delta_1 < \delta_2 < \delta_3$，下面给出这组变量$t$分布的图像。
+
+```{r tdis, eval=T, echo=F, warning=F, message=F, error=F,fig.height=2.5, fig.width=4}
+df <- 10
+ncp1 <- 0
+ncp2 <- 2
+ncp3 <- 4
+x <- seq(-10, 15, 0.1)
+dt1 <- dt(x, df=df, ncp=ncp1)
+dt2 <- dt(x, df=df, ncp=ncp2)
+dt3 <- dt(x, df=df, ncp=ncp3)
+ft1 <- pt(x, df=df, ncp=ncp1)
+ft2 <- pt(x, df=df, ncp=ncp2)
+ft3 <- pt(x, df=df, ncp=ncp3)
+da <- data.frame(x, dt1, dt2, dt3, ft1, ft2, ft3)
+
+figdt <- ggplot(data=da) + geom_line(aes(x, dt1), colour="blue", size=0.5) + geom_line(aes(x, dt2), colour="red", size=0.8) + geom_line(aes(x, dt3), colour="green", size=1.2) + xlab(TeX("$\\Z$")) + ylab(TeX("$t_{n,\\delta}$"))
+figft <- ggplot(data=da) + geom_line(aes(x, ft1), colour="blue", size=0.5) + geom_line(aes(x, ft2), colour="red", size=0.8) + geom_line(aes(x, ft3), colour="green", size=1.2) + xlab(TeX("$\\Z$")) + ylab(TeX("$F_{n, \\delta}(Z)$"))
+
+grid.newpage()
+pushViewport(viewport(layout=grid.layout(1, 2)))
+print(figdt, vp=vplayout(1, 1))
+print(figft, vp=vplayout(1, 2))
+```
+
+如上图蓝色，红色，绿色的曲线分别代表$Z_1, Z_2, Z_3$，可见若有$\delta_1 < \delta_2$，则对任一的$Z$，有$F_{n, \delta_1}(Z)\geq F_{n, \delta_2}(Z)$
+
+有了如上的信息，可知：
+
+\begin{displaymath}
+\frac{\sqrt{n}(\bar{X}-\theta_0)}{S} = (\frac{\sqrt{n}(\bar{X}-\theta)}{\sigma} + \frac{\sqrt{n}(\theta - \theta_0)}{\sigma})/\sqrt{\frac{1}{\sigma^2}S^2}
+\end{displaymath}
+
+令$X = \frac{\sqrt{n}(\bar{X}-\theta)}{\sigma}$，$\delta = \frac{\sqrt{n}(\theta - \theta_0)}{\sigma}$，$Y = \frac{(n-1)S^2}{\sigma^2}$，容易知道$X$，$Y$相互独立且有$X \sim N(0, 1)$以及$Y \sim \chi_{n-1}^2$，根据$t$分布的定义，最后得到：
+
+\begin{displaymath}
+\frac{\sqrt{n}(\bar{X}-\theta_0)}{S} \sim t_{n-1, \sqrt{n}(\theta-\theta_0)/\sigma}
+\end{displaymath}
+
+所以，可以把上面的检验改写成：
+
+\begin{equation}
+\label{t_psi}
+\Psi: \mbox{当}\frac{\sqrt{n}(\bar{X}-\theta_0)}{S} \geq -t_{n-1}(\alpha),\mbox{接受原假设},\mbox{反之则否定原假设}
+\end{equation}
+
+这里$t_{n-1}(\alpha)$与$u_{\alpha}$类似，是指自由度$n-1$，非中心参数为$\delta=0$（此时$\theta=\theta_0$）的$t$分布的上分位数为$\alpha$的点。
+
+这样，可以直接给出检验$\Psi$的功效函数：
+
+\begin{equation}
+\begin{split}
+\beta_{\psi}(\theta, \sigma) &= P_{\theta, \sigma}(\sqrt{n}(\bar{X}-\theta_0)/S <-t_{n-1}(\alpha) )\\
+&=F_{n-1, \delta}(-t_{n-1}(\alpha))
+\end{split}
+\end{equation}
+
+这里$\delta = \frac{\sqrt{n}(\theta-\theta_0)}{\sigma}$，$\beta_{\psi}(\theta, \sigma)$的取值与$\delta$有关，要想让功效函数有水平$\alpha$，就要求：
+
+\begin{displaymath}
+\beta_{\psi}(\theta, \sigma) = F_{n-1, \delta}(-t_{n-1}(\alpha)) \leq \alpha \quad \forall \theta \in H_0:\{\theta|\theta \geq \theta_0\}
+\end{displaymath}
+
+由上面对$t$分布的性质可知，$F$对于$\delta$是递减的，而$\delta=\frac{\sqrt{n}(\theta-\theta_0)}{\sigma}$对$\theta$是递增的。因此$\theta$变大时，$F$就会变小，所以当$\theta=\theta_0$时，对应了$F$的最大值。所以$\beta_{\psi}(\theta, \sigma)$在$H_0$上存在最大值，且当$\theta=\theta_0$时取最大。这样就证明了检验$\Psi$的功效函数存在水平$\alpha$。所以有：
+
+\begin{displaymath}
+\begin{split}
+&\beta_{\Psi}(\theta, \sigma) =  P_{\theta, \sigma}(\sqrt{n}(\bar{X}-\theta_0)/S <-t_{n-1}(\alpha) ) \leq \beta_{\Psi}(\theta_0, \sigma)\\
+&\mbox{等价于}\\
+&F_{n-1, \delta}(-t_{n-1}(\alpha)) \leq F_{n-1, 0}(-t_{n-1}(\alpha))\\
+&\mbox{分布}t_{n-1,0}\mbox{关于原点对称，所以有}-t_{n-1}(\alpha)=t_{n-1}(1-\alpha)\mbox{得出}\\
+&F_{n-1, \delta}(-t_{n-1}(\alpha)) \leq F_{n-1, 0}(t_{n-1}(1-\alpha))=\alpha
+\end{split}
+\end{displaymath}
+
+由此，$F$的水平为$\alpha$得证。同样的，我们给出一个例子讨论。
+
+```{r eval=T, echo=F, error=F, warning=F, message=F}
+set.seed(1234)
+n <- 10
+sigma <- 2
+th0 <- 120
+sample_t <- rnorm(n, 110, 2)
+alpha <- 0.05
+th_set <- seq(90, 150, 0.5)
+delta <- sqrt(n)*(th_set - th0)/sigma
+
+t_sample <- sqrt(n)*(mean(sample_t) - th0)/sd(sample_t)
+t_alpha <- qt(alpha, df=n-1, ncp=0, lower.tail = F)
+#print(sample)
+#beta <- pt(-t_alpha, df=n-1, ncp=delta)
+```
+\begin{lemma}
+\label{lizi_ttest}
+已知样本`r sample_t`来自总体$N(\theta, \sigma)$，考虑假设检验问题$H_0:\theta \geq 120,H_1:\theta < 120$,在检验水平$\alpha=0.05$情况下的情况。
+\end{lemma}
+\begin{displaymath}
+\begin{split}
+&\mbox{直接计算检验统计量：}\\
+&\frac{\sqrt{n}(\bar{X}-\theta_0)}{S} = \frac{\sqrt{`r n`}(`r mean(sample_t)`-`r th0`)}{`r sd(sample_t)`}=`r t_sample`\\
+&\mbox{查表得到自由度为}`r n-1`，\mbox{上分位点为}`r alpha`\mbox{的}t_{n-1(\alpha)}\\
+&t_{`r n-1`}(`r alpha`) = `r t_alpha`\\
+&\mbox{显然有：}\\
+&`r t_sample` < `r -t_alpha`\\
+&\mbox{根据检验$\Psi$\eqref{t_psi}式，原假设被拒绝}
+\end{split}
+\end{displaymath}
+
+\subsubsection{两个正态总体均值差的检验}
 
