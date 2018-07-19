@@ -38,7 +38,53 @@ vplayout <- function(x, y){
 
 \section{参数估计}
 
-（暂空）
+\subsection{基本概念}
+
+\subsubsection{总体、样本、统计量}
+
+*总体*：所研究问题有关对象的全体构成的集合
+
+\begin{lemma}
+\begin{enumerate}
+\item 研究试验田中水稻的根系长度，那么试验田中所有水稻根系长度构成问题总体，其中一株水稻的根系长度为其个体
+\item 某厂生产的一批螺母的质量，那么这一批螺母的质量构成总体，每个螺母的质量则为个体
+\end{enumerate}
+\end{lemma}
+
+总体可以理解为研究对象所有可能取值组成的一个空间，这个空间符合某种概率分布，那么总体就叫符合某种分布的总体。如前面
+提到的水稻根系长度，一般符合正态分布，那么这个总体属于正态分布的总体
+
+*样本*：按照一定规定从总体中抽出的一部分个体，这个规定指得是每个个体都有同等被抽出的机会。
+
+*统计量*：完全由样本决定的量叫做统计量，统计量的只依赖样本，不能依赖其他任何未知的量。
+
+\subsubsection{样本矩}
+
+一类重要的统计量称为样本矩，它分为*样本原点矩*和*样本中心矩*，定义如下
+
+\begin{Definition}
+样本原点矩：设$X_1,\cdots,X_n$位样本，$k$为正整数，则
+\begin{equation}
+a_k = (X_1^k + \cdots + X_n^k)/n
+\end{equation}
+称为$k$阶原点矩.
+\end{Definition}
+一阶原点矩，也就是$a_1 = \bar{X}$就是常见的样本均值。
+
+\begin{Definition}
+样本中心矩:设$X_1,\cdots,X_n$位样本，$k$为正整数，则
+\begin{equation}
+m_k = \frac{\sum_{i=1}^n(X_i - \bar{X})}{n}
+\end{equation}
+称为$k$阶中心矩阵
+\end{Definition}
+值得注意的是样本二阶中心矩为$m2 = \sum_{i=1}^n(X_i - \bar{X})/n$，样本的方差为$S^2 = \sum_{i=1}^n(X_i - \bar{X})/(n-1)$，
+它们之间相差一个常数$m_2 = \frac{n-1}{n}S^2$
+\subsection{矩估计、极大似然估计和贝叶斯估计}
+
+\subsection{点估计的优良性准则}
+
+\subsection{区间估计}
 
 \section{假设检验}
 
@@ -557,4 +603,38 @@ t_alpha <- qt(alpha, df=n-1, ncp=0, lower.tail = F)
 \end{displaymath}
 
 \subsubsection{两个正态总体均值差的检验}
+
+若样本$X_1,\cdots,X_n$是从总体$N(\theta_1, \sigma^2)$抽出，而样本$Y_1, \cdots, Y_n$是从正态总体$N(\theta_2, \sigma^2)$中抽出。两个样本的总体方差相同，但均值是不同的。考虑如下检验问题：
+
+1. $H_0:\theta_1 - \theta_2 \geq \theta_0,H_1:\theta_1 - \theta_2 < \theta_0;$
+2. $H_0:\theta_1 - \theta_2 \leq \theta_0,H_1:\theta_1 - \theta_2 > \theta_0;$
+3. $H_0:\theta_1 - \theta_2 = \theta_0,H_1:\theta_1 - \theta_2 \neq \theta_0.$
+
+这三个检验问题本质上与前面单一样本的均值检验没有什么不同，考虑检验统计量$\bar{X}-\bar{Y}$作为$\theta_1-\theta_2$的估计，同样可以定出一个$C$作为临界值，于是对于问题1来说，一个检验$\Phi$是，$\bar{X}-\bar{Y}>C$时接受原假设，反之则拒绝。考虑$\bar{X}-\bar{Y}$的方差为$S^2 = (1/n + 1/m)\sigma^2$，于是类似前面的$u$检验临界值定义\eqref{lingjiezhi}$C=\theta_0 - \sigma u_{\alpha}/\sqrt{n}$，这里同样可设计一个检验统计量：
+
+\begin{equation}
+\label{doubletu}
+U = \sqrt{\frac{nm}{n+m}}\frac{(\bar{X}-\bar{Y}-\theta_0)}{\sigma}
+\end{equation}
+
+于是上述上述三个问题的检验为:
+
+1. $g$: 当$U \geq -u_{alpha}$接受$H_0$，不然就否定$H_0$;
+2. $g^{'}$: 当$U \leq u_{\alpha}$接受$H_0$，不然就否定$H_0$;
+3. $g^{''}$: 当$|U| \leq u_{\alpha/2}$接受$H_0$，不然就否定$H_0$.
+
+对于方差$\sigma$未知的情况，检验统计量中的$\sigma$以样本的标准差来代替。此时这个统计量服从$t$分布：
+
+\begin{equation}
+T = \sqrt{\frac{nm}{n+m}}\frac{(\bar{X}-\bar{Y}-\theta_0)}{S}
+\end{equation}
+
+当$\theta_1 - \theta_2=\theta_0$时，$T$服从自由度为$n+m - 2$的$t$分布，于是可针对上面的假设问题可提出如下检验法：
+
+1. $h$: 当$T \geq -t_{n+m-2}(\alpha)$时接受$H_0$，不然就否定$H_0$;
+2. $h^{'}$: 当$T \leq t_{n+m-2}(\alpha)$时接受$H_0$，不然就否定$H_0$;
+3. $h^{''}$: 当$|T| \leq t_{n+m-2}(\alpha/2)$时接受$H_0$，不然就否定$H_0$;
+
+上述三个检验合称*双样本$t$检验*，值得注意，这个检验要求两样本方差相同，应用上则要求两样本方差之比与1相差不大。
+
 
