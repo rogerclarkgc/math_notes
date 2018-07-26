@@ -18,12 +18,10 @@ vplayout <- function(x, y){
   viewport(layout.pos.row=x, layout.pos.col = y)
 }
 ```
-
 \newtheorem{Definition}{\hspace{2em}定义}
 \newtheorem{theorem}{\hspace{2em}定理}
 \newtheorem{lemma}{\hspace{2em}例子}
 \newtheorem{Proof}{证明}
-
 \section{事件的概率}
 
 （暂空）
@@ -65,7 +63,7 @@ vplayout <- function(x, y){
 \begin{Definition}
 样本原点矩：设$X_1,\cdots,X_n$位样本，$k$为正整数，则
 \begin{equation}
-a_k = (X_1^k + \cdots + X_n^k)/n
+a_k = \frac{(X_1^k + \cdots + X_n^k)}{n}
 \end{equation}
 称为$k$阶原点矩.
 \end{Definition}
@@ -78,13 +76,322 @@ m_k = \frac{\sum_{i=1}^n(X_i - \bar{X})}{n}
 \end{equation}
 称为$k$阶中心矩阵
 \end{Definition}
-值得注意的是样本二阶中心矩为$m2 = \sum_{i=1}^n(X_i - \bar{X})/n$，样本的方差为$S^2 = \sum_{i=1}^n(X_i - \bar{X})/(n-1)$，
+值得注意的是样本二阶中心矩为$m2 = \sum_{i=1}^n(X_i - \bar{X})^2/n$，样本的方差为$S^2 = \sum_{i=1}^n(X_i - \bar{X})^2/(n-1)$，
 它们之间相差一个常数$m_2 = \frac{n-1}{n}S^2$
 \subsection{矩估计、极大似然估计和贝叶斯估计}
 
+\subsubsection{参数点估计问题}
+当已知总体是某种分布，但不知道其概率密度函数的参数时，这时需要根据从总体中抽出的独立随机样本来估计总体分布的某个或几个参数。即有概率
+密度函数$g(\theta_1, \cdots, \theta_k)$，其中$\theta_1$是未知的，我们便构造一个统计量$\hat{\theta_1}=\hat{\theta_1}(X_1,\cdots,X_n)$，
+当有样本$X_1, \cdots, X_n$就带入$\hat{\theta_1}(X_1, \cdots, X_n)$得到$theta_1$的估计值。这样用一个点$\hat{\theta_1}$来估计未知参数$\theta_1$
+的行为称为点估计。
+
+\subsubsection{矩估计法}
+设总体分布为$f(x;\theta_1,\cdots,\theta_k)$，则它的矩（此处以原点矩为例）为：
+\begin{displaymath}
+a_m = \int_{-\infty}^{\infty}x^mf(x;\theta_1,\cdots,\theta_k)
+\end{displaymath}
+对离散型的分布则有：
+\begin{displaymath}
+a_m = \sum_i x_i^m f(x_i;\theta_1,\cdots,\theta_k)
+\end{displaymath}
+当在样本大小$n$较大时，它接近样本的原点矩，于是有
+\begin{displaymath}
+a_m = a_m(\theta_1,\cdots,\theta_k) \simeq a_m = \sum_{i=1}^{n}X_i^m/n
+\end{displaymath}
+这样，式子左边是包含$\theta_1,\cdots, \theta_k$的表达式，右边是一个实数的样本矩，于是让$m=1,\cdots,k$，得到一系列方程组：
+\begin{equation}
+a_m(\theta_1,\cdots, \theta_k) = a_m \quad (m=1, \cdots, k)
+\end{equation}
+解这个方程组，其根$\hat{\theta_i}=\hat{\theta_i}(X_1,\cdots,X_n)$就是$\theta_i$的估计。
+
+\subsubsection{极大似然估计法}
+设总体分布为$f(x;\theta_1,\cdots,\theta_k)$，$X_1,\cdots,X_k$为取自总体的样本（各个样本之间独立同分布），则样本的分布为：
+\begin{displaymath}
+f(x_1;\theta_1,\cdots,\theta_k)f(x_2;\theta_1,\cdots,\theta_k)\cdots f(x_n;\theta_1,\cdots,\theta_k)
+\end{displaymath}
+把这分布记为$L(x_1,\cdots,x_n;\theta_1,\cdots,\theta_k)$，极大似然法就是把$L(x_1,\cdots,x_n;\theta_1,\cdots,\theta_k)$中的样本
+$x_1,\cdots,x_n$固定，把$L$看成$\theta_1,\cdots,\theta_k$的函数，这样只要找到一组$\theta_1^*,\cdots,\theta_k^*$使得$L$取最大，
+这组值就可以作为$\theta_1,\cdots,\theta_k$的估计了。即满足如下：
+\begin{equation}
+L(X_1, \cdots,X_n;\theta_1^{*},\cdots,\theta_k^{*}) = \max \limits_{\theta_1,\cdots,\theta_k} L(X_1,\cdots,X_n;\theta_1,\cdots,\theta_k)
+\end{equation}
+的$(\theta_1^*,\cdots,\theta_k^*)$作为$(\theta_1,\cdots,\theta_k)$的估计值。
+根据$L$的定义容易得到:
+\begin{equation}
+\begin{split}
+\ln L &= \ln f(x_1;\theta_1,\cdots,\theta_k)f(x_2;\theta_1,\cdots,\theta_k)\cdots f(x_n;\theta_1,\cdots,\theta_k)\\
+& = \sum_{i=1}^n \ln f(X_i;\theta_1,\cdots, \theta_k)
+\end{split}
+\end{equation}
+要让$L$在$(\theta_1, \cdots,\theta_k)$上有最大，只需要让$L$在$\theta_k$上的一阶偏导为0，这样就有：
+\begin{equation}
+\frac{\partial \ln L}{\partial \theta_i} = 0 \quad (i = 1, \cdots, k)
+\end{equation}
+由此得到$k$个关于$\theta_k$的方程组，如果该方程组有唯一解且能证明这个解是极大值点，则可得出极大似然估计。
+
+值得注意的是，极大似然估计法和矩估计法在一些特殊的情况下导出的对总体的估计量是等价的，例如，当总体是正态分布、指数分布时。当然更多的情况是两者并不相同。
+
+\subsubsection{贝叶斯法}
+贝叶斯法的核心思想是“先验分布”的设定和“后验分布”的计算，假定要估计的一个参数是$\theta$，在抽样或实验之前，我们可以根据以前的经验或仅仅是直观感受把这个参数的分布定为一个$h(\theta)$，这个分布就称为*先验概率密度分布*。
+
+有了先验分布，我们来一步步推导$\theta$的*后验概率密度分布*，首先我们开始抽样，得到一系列样本$X_1,\cdots,X_n$，设总体的分布是$f(X,\theta)$，那么，这个样本的概率密度函数为：
+\begin{equation}
+\label{sample_condition}
+f(X_1,\theta)\cdots f(X_n, \theta)
+\end{equation}
+这个概率密度相当于在给定了$\theta$下样本$(X_1,\cdots,X_n)$的条件概率密度。根据联合概率密度的公式：
+\begin{equation}
+f(X_1,X_2) = f_1(X_1)f(X_2|X_1)
+\end{equation}
+这样我们写出$(\theta, X_1,\cdots,X_n)$的联合概率密度，注意，这里应该把系列样本$(X_1,\cdots,X_n)$作为一个整体看，这样\eqref{sample_condition}就相当于是样本在分布参数为$\theta$时的条件概率密度了。这样就有:
+\begin{equation}
+f(\theta, X_1,\cdots,X_n) = h(\theta)f(X_1,\theta)\cdots f(X_n, \theta)
+\end{equation}
+有了联合密度函数$f(\theta,X_1,\cdots,X_n)$，对它在$\theta$方向积分，得到了样本$(X_1,\cdots,X_n)$的一个所谓“普遍性”的边缘密度分布，如下：
+\begin{equation}
+\label{sample_border}
+p(X_1,\cdots,X_n) = \int h(\theta) f(X_1,\theta)\cdots f(X_n, \theta) \textrm{d} \theta
+\end{equation}
+由此，根据条件概率公式，很容易写出$\theta$在抽样后的后验概率密度函数$h(\theta|X_1,\cdots,X_n)$为：
+\begin{equation}
+\label{theta_post}
+\begin{split}
+h(\theta |X_1,\cdots,X_n) &= \frac{f(\theta, X_1,\cdots,X_n)}{p(X_1,\cdots,X_n)}\\
+&= \frac{h(\theta)f(X_1,\theta)\cdots f(X_n, \theta)}{\int h(\theta) f(X_1,\theta)\cdots f(X_n, \theta) \textrm{d} \theta}
+\end{split}
+\end{equation}
+由此，我们按照贝叶斯法得出了$\theta$的后验概率分布，可以看到这个后验分布其实是$\theta$在样本$X_1,\cdots,X_n$的条件概率分布，它综合了先验分布$h(\theta)$和样本带来的信息$p(X_1,\cdots,X_n)$。
 \subsection{点估计的优良性准则}
+\subsubsection{估计量的无偏性}
+下面给出一个*无偏估计量*的定义：
+\begin{Definition}
+设总体的分布有未知参数$\theta_1,\cdots,\theta_k$，$X_1,\cdots,X_n$是从总体抽出的样本，要估计的分布形式为$g(\theta_1,\cdots,\theta_k)$，$g$的形式是已知的。若$\hat{g}(X_1,\cdots,X_n)$是一个估计量。则对\uwave{任何}可能的$\theta_1,\cdots,\theta_k$，都有：
+\begin{equation}
+\label{unbias_definition}
+E_{\theta_1,\cdots,\theta_k}[\hat{g}(X_1,\cdots,X_n)] = g(\theta_1,\cdots,\theta_k)
+\end{equation}
+则把满足\eqref{unbias_definition}的$\hat{g}$称为$g(\theta_1,\cdots,\theta_k)$的一个无偏估计量。
+\end{Definition}
+
+无偏估计量是一种优良的性质，其原因有二：
+
+1. 说明估计量没有系统性误差，虽然$\hat{g}$的值可能是在真实$g$上下波动的，但在概率上平均，这种上下的波动并没有偏向上或者下，也就是说在偏差能相互抵消，说明估计量本身没有系统性的误差。下面以一个例子来说明
+
+```{r unbias_example,eval=T, echo=F, warning=F, error=F, fig.height=3, fig.width=4}
+n <- 1000
+mu1 <- 0
+mu2 <- 1
+unbias <- rnorm(n, mu1)
+bias <- rnorm(n, mu2)
+ob <- c(1:n)
+fig_unbias <- ggplot(data.frame(ob, unbias)) + geom_point(aes(ob, unbias), alpha=1/3) + geom_hline(yintercept = mu1, col="green", size=1.1) + ylab(TeX("$\\hat{g}_1$")) + xlab("observations")
+fig_bias <- ggplot(data.frame(ob, bias)) + geom_point(aes(ob, bias),alpha=1/3) + geom_hline(yintercept = mu1, col="green", size=1.1) + ylab(TeX("$\\hat{g}_2$")) + xlab("observations") + geom_hline(yintercept = 1, col="red", size=1.1)
+
+grid.newpage()
+pushViewport(viewport(layout=grid.layout(1, 2)))
+print(fig_unbias, vp=vplayout(1, 1))
+print(fig_bias, vp=vplayout(1, 2))
+```
+
+可以看到，在上图的两个估计量$\hat{g_1}$和$\hat{g_2}$的1000次对正态总体$N(0, 1)$的均值估计中，$\hat{g_1}$的估计值虽然分布在0的上下两端，但可以看到分布基本呈一个对称态势，位于0上侧的和下侧的差不多，且越靠近0的点，它的数量就越多，这说明$\hat{g_1}$对总体的估计从概率上来说不总是偏高也不总是偏低，相反，估计量大于0的可能和小于0的可能是一样的，其期望值就是真实的0。
+
+而$\hat{g_2}$就不同它的估计值大多数都大于0， 显然是偏高的，并且在1附近聚集的很明显，这就表明用这个估计量来估计总体$N(0, 1)$的均值，有很多时候会得到一个偏高的结果，这样它的期望就不会等于0，而是大于0，所以它不是一个无偏的估计量
+
+2. 结合大数定理，若把$\hat{g}(X_1, \cdots,X_n)$在很多样本上使用，例如在样本$(X_1^{(1)},\cdots,X_n^{(1)})$上的估计值记为$\hat{g}(X_1^{(1)},\cdots,X_n^{(1)})$，就这样在N个样本使用，得到这样一组估计值$\hat{g}(X_1^{(1)},\cdots,X_n^{(1)}),\cdots,\hat{g}(X_1^{(N)},\cdots,X_n^{(N)})$，则根据大数定理，当$N \rightarrow \infty$时有：
+\begin{displaymath}
+\frac{\sum_{i=1}^N \hat{g}(X_1^{(i)},\cdots,X_n^{(i)})}{N} \rightarrow g(\theta_1, \cdots,\theta_k)
+\end{displaymath}
+
+即表明估计量的均值会依概率收敛到真实值$g(\theta_1,\cdots,\theta_k)$。而对无偏估计量而言，这个收敛到真实值的概率会是100%。反之，如果一个估计量不是无偏的，无论使用多少次，其均值也会和真实值保持一定距离，说明这个估计量存在一定的系统偏差。下面以一个例子来说明。
+
+前面提到，样本的二阶中心矩$m_2 = \sum_{i=1}^n(X_i-\bar{X})/n$不是对总体分布方差$\sigma^2$无偏估计量，而样本的方差$S^2 = \sum_{i=1}^n(X_i-\bar{X})/(n-1)$则是对总体分布方差$\sigma^2$的无偏估计量。下面通过一个实验来表明$S^2$和$m_2$在大数定理下的收敛情况。
+
+```{r unbias_caculate2,eval=T, echo=F, warning=F, error=F, fig.height=3, fig.width=4}
+set.seed(1234)
+true_sd <- 2
+simsteps <- 100000
+sample_cap <- 10
+sample_matrix <- matrix(rnorm(simsteps*sample_cap, sd=true_sd), ncol=sample_cap)
+sample_sd <- apply(sample_matrix, 1, var)
+sample_m2 <- sample_sd * (sample_cap-1) / sample_cap
+
+meanstep <- seq(100, simsteps, 100)
+sd_mean <- vector(mode="numeric", length=length(meanstep))
+m2_mean <- sd_mean
+for (i in c(1:length(meanstep))){
+  index <- meanstep[i]
+  sd_mean[i] <- mean(sample_sd[1:index])
+  m2_mean[i] <- mean(sample_m2[1:index])
+}
+```
+
+```{r unbias_fig2,eval=T, echo=F, warning=F, error=F, fig.height=1.5, fig.width=4}
+fig_sd <- ggplot(data=data.frame(meanstep, sd_mean)) + geom_line(aes(meanstep, sd_mean)) + geom_hline(yintercept = true_sd^2, col="green") + xlab(TeX("$N$")) + ylab(TeX("$\\bar{S^2}$")) + scale_x_continuous(labels=c("0", "", "50000", "", "100000"))
+fig_m2 <- ggplot(data=data.frame(meanstep, m2_mean)) + geom_line(aes(meanstep, m2_mean)) + geom_hline(yintercept = true_sd^2, col="green") + xlab(TeX("$N$")) + ylab(TeX("$\\bar{m_2^2}$")) + geom_hline(yintercept = true_sd^2 * (sample_cap-1) / sample_cap, col="red")+ scale_x_continuous(labels=c("0", "", "50000", "", "100000"))
+
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(1, 2)))
+print(fig_sd, vp=vplayout(1, 1))
+print(fig_m2, vp=vplayout(1, 2))
+```
+
+对正态总体$N(0,4)$进行抽样，样本大小为`r sample_cap`，重复抽样次数1-100000次，每进行$N$次抽样，就计算出$S^2$和$m_2$在这$N$次抽样下的均值，最后就得到了抽样次数在1-100000下的两个统计量的均值。以均值和抽样次数作折线图，得到上图
+
+可以发现，随着抽样实验的次数的增多，$\bar{S^2}$的值越来越接近真实的值$4$，而$\bar{m_2}$明显收敛到$3.6$，这说明如果用$m_2$估计总体方差$\sigma^2$只会偏小。
+
+\subsubsection{最小方差无偏估计}
+除了用无偏性来评价估计量外，也使用*最小方差*这一概念来评价一估计量，首先给出*均方误差*的定义：
+\begin{Definition}
+设$X_1,\cdots,X_n$是从某一参数$\theta$的总体中抽出的样本，若有估计量$\hat{\theta}=\hat{\theta}(X_1,\cdots,X_n)$，则这个估计量与真实值$\theta$的误差为$\hat{\theta}(X_1,\cdots,X_n)-\theta$，显然误差本身也是由样本决定的，是一个随机变量，对其平方并取均值，则有：
+\begin{equation}
+M_{\hat{\theta}}(\theta) = E_{\theta}[\hat{\theta}(X_1,\cdots,X_n)-\theta]^2
+\end{equation}
+上式子中的$M_{\hat{\theta}}(\theta)$即称为估计量$\hat{\theta}$的均方误差
+\end{Definition}
+
+显然，均方误差越小的估计量越优秀，根据方差的一个定理：
+
+\begin{equation}
+Var(X) = E(X - EX)^2 = E(X^2) - EX ^2
+\end{equation}
+可将$M_{\hat{\theta}}(\theta)$改写：
+\begin{equation}
+\begin{split}
+M_{\hat{\theta}}(\theta) &= E_{\theta}(\hat{\theta} - \theta)^2\\
+&= E(\hat{\theta}^2) - [E(\hat{\theta})]^2 + [E(\hat{\theta})]^2 + \theta^2 - 2E(\hat{\theta})\theta\\
+&= Var_{\theta}(\hat{\theta}) + [E_{\theta}(\hat{\theta}) - \theta] ^2
+\end{split}
+\end{equation}
+这就表明均方误差由$\textrm{Var}_{\theta}(\hat{\theta})$，即估计量$\hat{\theta}$自身方差，另外一部分$[E_{\theta}(\hat{\theta}) - \theta]^2$就是前面描述无偏性的系统误差。
+显然，如果$\hat{\theta}$是一个无偏估计量，则描述系统误差的项为0，那么就有：
+\begin{equation}
+M_{\hat{\theta}}(\theta) = \textrm{Var}_{\theta}(\hat{\theta})
+\end{equation}
+这个时候均方误差就只是由估计量$\hat{\theta}$的方差来决定。那么，对无偏估计量来说，均方误差的比较久归结为估计量自身的方差的比较，方差较小者较优。这样就能给出*最小方差无偏估计*的定义：
+\begin{Definition}
+设有$\hat{\theta}$是分布$g(\theta)$的一个无偏估计，若对$g(\theta)$的任何一个无偏估计$\hat{\theta_1}$，$\hat{\theta}$都满足：
+\begin{equation}
+\textrm{Var}_{\theta}(\hat{\theta}) \leq \textrm{Var}_{\theta}(\hat{\theta_1})
+\end{equation}
+对$\theta$的任何取值都成立，就把$\hat{\theta}$称为$g(\theta)$的一个最小方差无偏估计（MVU估计）
+\end{Definition}
+如何寻找MVU估计不在笔记讨论范围，详情见陈希孺《概率论与数理统计》中关于克拉美-劳不等式的讨论。
+
+\subsubsection{估计量的相合性与正态性}
+前面讨论的估计量的无偏性是针对有限的样本来引申出的一种性质，例如前面的例子中用的样本数量都是10。设想当样本数量接近无穷时，估计量的两种新的性质就被引申出来，即估计量的*相合性*和*正态性*
+
+1. 相合性
+
+估计量的相合性是对大数定理的一种引申，大数定理是指对$X_1,X_2,\cdots, X_n,\cdots$独立同分布，都属于均值为$\theta$的总体，记$\bar{X_n} = \sum\limits_{i=1}^n X_i/n$，当$n \rightarrow \infty$时，对任一给定$\varepsilon > 0$都有：
+
+\begin{displaymath}
+\lim_{n \rightarrow \infty} P(|\bar{X_n} - \theta| \geq \varepsilon) =0
+\end{displaymath}
+
+这个定理表明，随着样本容量的增大，估计值$\bar{X_n}$与真实值$\theta$的差距达到某个$\varepsilon$的概率越来越小，以至于趋近于0。换句话说，样本足够大，均值的误差就可以任意小。
+
+把这个定理引申，就得到相合性的定义：
+\begin{Definition}
+设总体分布参数为$\theta_1,\cdots,\theta_k$，$g(\theta_1,\cdots,\theta_k)$是$\theta_1,\cdots,\theta_k$d的一个函数，若$X_1,\cdots,X_n$是从该总体中抽出的样本，$T(X_1,\cdots, X_n)$是$g(\theta_1,\cdots, \theta_k)$的估计量，对任一$\varepsilon > 0$，有：
+\begin{equation}
+\lim_{n \rightarrow \infty}P_{\theta_1, \cdots, \theta_k}(|T(X_1,\cdots,X_n) - g(\theta_1,\cdots,\theta_k)| \geq \varepsilon) =0
+\end{equation}
+对一切$(\theta_1,\cdots,\theta_k)$成立，则称$T(X_1,\cdots, X_n$是$g(\theta_1, \cdots, \theta_k)$的一个相合估计
+\end{Definition}
+一个具有相合性的估计量表明，只有样本取的足够大，那么估计量与真实值的误差就会越来越小，这是一个很基本性质。下面以一个例子直观展现样本均值$\bar{X}$的相合性
+
+```{r bigsample_cal,eval=T, echo=F, warning=F, error=F, fig.height=1.5, fig.width=4}
+set.seed(1234)
+step_mean <- seq(1, 1000)
+mean_ex <- sapply(step_mean, function(x){mean(rnorm(x))})
+fig_meanex <- ggplot(data.frame(step_mean, mean_ex)) + geom_line(aes(step_mean, mean_ex)) + geom_hline(yintercept = 0, col="green") + xlab(TeX("$n$")) + ylab(TeX("$\\bar{X_n}$"))
+fig_meanex
+```
+
+上面的例子是抽自正态分布$N(0,1)$的样本在样本大小从1-1000的情况，可以看到随着样本容量的变大，样本均值$\bar{X_n}$越来越接近真实值0。这就是所谓的相合性
+
+2. 渐进正态性
+
+估计量$T$是样本的一个函数，自身往往也满足一种分布，但这种分布往往不容易直接求出，类似中心极限定理，当样本容量$n$很大时，可以证明，许多统计量都会趋近于正态分布，这就是所谓的*渐进正态性*。
 
 \subsection{区间估计}
+\subsubsection{基本概念}
+点估计是使用一个数对总体的参数进行估计，区间估计则是通过样本得到一段区间$[\hat{\theta_1},\hat{\theta_2}]$，让未知参数$\theta$，有很大可能落入这个区间，与此同时也要让区间的长度$\theta_2 - \theta_1$越小越好。显然同时满足以上这两点是不可能的。区间长度长了，$\theta$落入区间的可能性高了，但估计的精度就下去了，反之短的区间虽然有高的精度，但$\theta$落入区间的概率也降低，估计的可靠性不足。由此我们给出一个权衡的定义。
+\begin{Definition}
+\label{conflevel_def}
+给定一很小的数$\alpha > 0$，如果参数的落入估计区间的概率满足：
+\begin{equation}
+\label{conflevel}
+P_{\theta}(\hat{\theta_1}(X_1,\cdots,X_n) \leq \theta \leq \hat{\theta_2}(X_1,\cdots,X_n)) = 1 - \alpha 
+\end{equation}
+则称区间估计$[\hat{\theta_1}, \hat{\theta_1}]$的置信系数为$1 - \alpha$
+\end{Definition}
+置信系数$1 - \alpha$量化了区间估计的可靠程度，指该区间有多大概率包含未知参数$\theta$。但在更一般的情况下，无法保证$P_{\theta}(\hat{\theta_1} \leq \theta \leq \hat{\theta_2})$对一切的$\theta$都满足式\eqref{conflevel}，但可保证这个概率不小于$1 - \alpha$，即有：
+\begin{equation}
+P_{\theta}(\hat{\theta_1}(X_1,\cdots,X_n) \leq \theta \leq \hat{\theta_2}(X_1,\cdots,X_n)) \leq 1 - \alpha 
+\end{equation}
+此时称$1 - \alpha$为区间$[\hat{\theta_1}, \hat{\theta_2}]$的*置信水平*，一般情况下$\alpha = 0.05$是使用的比较多的情况，也就是说，一般会计算置信水平为$0.95$的区间估计。
+\subsubsection{枢轴变量法}
+设$X_1,\cdots,X_n$是抽自正态总体$N(\mu, \sigma^2)$的样本，要通过这个样本来求$\mu$的区间估计，分两种情况：
+
+*1. 总体方差$\sigma^2$已知*
+
+显然，样本的均值$\bar{X}$是一个对总体均值的良好估计，接着构造一个新的随机变量，它显然满足：
+\begin{equation}
+\label{quzhou}
+\frac{\sqrt{n}(\bar{X} - \mu)}{\sigma} \sim N(0, 1)
+\end{equation}
+为了求出$\mu$的区间估计，先引入*分位点*的概念。
+\begin{Definition}
+以$\Phi(x)$记$N(0,1)$的分布函数，对一个较小的$0 < \beta < 1$，若$u_\beta$满足方程：
+\begin{equation}
+\Phi(u_\beta) = 1-\beta
+\end{equation}
+则称$u_{\beta}$是分布$N(0, 1)$的上$\beta$分位点。
+\end{Definition}
+
+```{r uptail,eval=T, echo=F, warning=F, error=F, fig.height=1.5, fig.width=4}
+x_norm <- seq(-3, 3, 0.1)
+y_norm <- dnorm(x_norm)
+u_0.95 <- qnorm(0.95)
+u_0.05 <- qnorm(0.05)
+
+fig_norm <- ggplot(data.frame(x_norm, y_norm)) + geom_line(aes(x_norm, y_norm),col="blue", size=1) + geom_vline(xintercept = u_0.95) + geom_vline(xintercept = u_0.05) + scale_x_continuous(labels = c("", TeX("$u_{0.05}$"),"", "0", "", TeX("$u_{0.95}$"), ""), breaks = c(-3, -2, -1, 0, 1, 2, 3)) + xlab(TeX("$x$")) + ylab(TeX("$\\Phi(x)$"))
+fig_norm
+```
+
+可以看到，如果分布是关于原点对称的，显然有$u_{1-\alpha} =  -u_{\alpha}$。这是一个很有用的性质。
+
+式\eqref{quzhou}中的随机变量$\sqrt{n}(\bar{X} - \mu)/\sigma$满足$N(0, 1)$，并且它的分布类型与$\mu$无关，因此我们可以通过这个变量来换算得到$\mu$的置信区间。根据定义\eqref{conflevel_def}，写出：
+\begin{displaymath}
+\begin{split}
+P(-u_{\alpha/2} \leq \frac{\sqrt{n}(\bar{X}-\mu)}{\sigma} \leq u_{\alpha/2}) &= \Phi(u_{\alpha/2}) - \Phi(-u_{\alpha/2})\\
+&= \Phi(u_{\alpha/2}) - (1 - \Phi(u_{\alpha/2}))\\
+&= 1 - \alpha
+\end{split}
+\end{displaymath}
+
+对上面的随机变量$\sqrt{n}(\bar{X}-\mu)/{\sigma}$及其两端$u_{\alpha/2}$稍作改写即可转换成关于$\mu$的置信区间的定义：
+\begin{displaymath}
+P(\bar{X} - \frac{\sigma u_{\alpha/2}}{\sqrt{n}}) \leq \mu \leq P(\bar{X} + \frac{\sigma u_{\alpha/2}}{\sqrt{n}}) = 1 - \alpha
+\end{displaymath}
+
+这样就得到了$\mu$的置信系数$1-\alpha$的置信区间为
+\begin{equation}
+\label{muconf}
+[\hat{\theta_1}, \hat{\theta_2}] = [\bar{X} - \frac{\sigma u_{\alpha/2}}{\sqrt{n}},\bar{X} + \frac{\sigma u_{\alpha/2}}{\sqrt{n}}]
+\end{equation}
+
+由上面的例子可以看出随机变量$\sqrt{n}(\bar{X} - \mu)/\sigma$的作用，它起一个“中转枢纽”的作用，首先它包含未知参数$\mu$，但又有一个确切已知的分布形式，通过这个分布我们能写出符合定义\eqref{conflevel_def}的表达式，通过变形最终得到了$mu$的置信区间。
+
+*2. 总体方差$\sigma^2$未知*
+
+在总体方差未知时，枢轴变量中的$\sigma$就无法使用，我们使用样本标准差$S$来代替，这样数轴变量就变成了$\sqrt{n}(\bar{X} - \mu)/S$，经过一些证明可以知道它服从自由度为$n-1$的$t$分布，由于$t$分布同样和正态分布一样关于原点对称，因而可以继续沿用1.中的归纳方法，得出此情况下$\mu$的$1-\alpha$置信区间为：
+\begin{equation}
+\label{muconf_nsigma}
+[\hat{\theta_1}, \hat{\theta_2}] = [\bar{X} - \frac{S t_{n-1}(\alpha/2)}{\sqrt{n}},\bar{X} + \frac{S t_{n-1}(\alpha/2)}{\sqrt{n}}]
+\end{equation}
 
 \section{假设检验}
 
