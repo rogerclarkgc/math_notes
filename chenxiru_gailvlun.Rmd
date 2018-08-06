@@ -1242,3 +1242,423 @@ print(fig_resnl, vp=vplayout(1, 2))
 ```
 
 可以很明显的看到，回归线并没有较好的拟合所有观测点，观测点似乎存在一种二次关系，而残差图也表明了这一点，残差明显和$X_i$存在一种二次关系，这就表明了拟合的线性模型中存在未被$X_i$解释的二次项，而这个二次项被归入到了残差中，这是不符合线性模型的假定的，说明我们应该重新考虑模型的数学形式。
+
+\subsubsection{区间估计和预测}
+
+为了对线性模型的参数$\beta_1,\beta_0$作区间估计，需要对误差$e_1, \cdots, e_n$加入正态分布的假定。即对$e_1, \cdots, e_n$要求它们独立同分布，且有$e_i \sim N(0, \sigma^2)$。
+
+先考虑$\beta_1$的区间估计，由前面的\eqref{ols_property}可知，$\hat{\beta}_1$均值$\beta_1$，方差为$\sigma^2S_x^{-2}$，因此与$\beta_1$有关的一个随机变量满足：
+\begin{displaymath}
+\frac{\hat{\beta}_1 - \beta_1}{\sigma S_x^{-1}} \sim N(0, 1)
+\end{displaymath}
+由于误差的方差$\sigma^2$未知，用式\eqref{unbias_sigma}中的估计量$\hat{\sigma^2}$来代替，因此正态分布$N(0, 1)$变成一个自由度$n-2$的中心$t$分布：
+\begin{equation}
+\frac{\hat{\beta}_1 - \beta_1}{\hat{\sigma} S_x^{-1}} \sim t_{n-2}
+\end{equation}
+由前面关于区间估计的计算方法，容易得到$\beta_1$在置信系数$1-\alpha$的置信区间：
+\begin{equation}
+[\hat{\beta}_1 - \hat{\sigma} S_x^{-1} t_{n-2}(\alpha/2),\hat{\beta}_1 + \hat{\sigma} S_x^{-1} t_{n-2}(\alpha/2)]
+\end{equation}
+
+其置信系数为$1-\alpha$上界与下界分别为：
+\begin{equation}
+\hat{\beta}_1 + \hat{\sigma} S_x^{-1} t_{n-2}(\alpha) \quad \hat{\beta}_1 - \hat{\sigma} S_x^{-1} t_{n-2}(\alpha) 
+\end{equation}
+
+对$\beta_0$的区间估计，类似上面的方法，已知$E(\hat{\beta}_0)=\beta_0,\textrm{Var}(\hat{\beta}_0) = \sigma^2 / n$，则枢轴变量满足；
+\begin{equation}
+\frac{\hat{\beta}_0 - \beta_0}{\hat{\sigma}/\sqrt{n} } \sim t_{n-2}
+\end{equation}
+由此可得，其置信系数的为$1-\alpha$的置信区间和置信上界、下界为：
+\begin{equation}
+\begin{split}
+&[\hat{\beta}_0 - \frac{\hat{\sigma}}{\sqrt{n}} t_{n-2}(\alpha/2),\hat{\beta}_0 + \frac{\hat{\sigma}}{\sqrt{n}} t_{n-2}(\alpha/2)]\\
+&\hat{\beta}_0 + \frac{\hat{\sigma}}{\sqrt{n}} t_{n-2}(\alpha)\\
+&\hat{\beta}_0 - \frac{\hat{\sigma}}{\sqrt{n}} t_{n-2}(\alpha)
+\end{split}
+\end{equation}
+
+下面对回归函数$m(x)=\beta_0 + \beta_1 (x - \bar{X})$做区间估计，容易知道，$m(x)$的估计量是$\hat{m}(x)=\hat{\beta}_0 + \hat{\beta}_1 (x - \bar{X})$，由此可以可以算出$\hat{m}(x)$的均值和方差：
+\begin{displaymath}
+\begin{split}
+E(\hat{m}(x)) &= E(\hat{\beta}_0) + E(\hat{\beta}_1) (x - \bar{X})\\
+& = \beta_0 + \beta_1 (x - \bar{X}) = m(x)\\
+\textrm{Var}(\hat{m}(x)) &= \textrm{Var}(\hat{\beta}_0) + (x - \bar{X})^2 \textrm{Var}(\hat{\beta}_1)\\
+&= \frac{\sigma^2}{n} + (x - \bar{X})^2 \frac{\sigma^2}{S_x^2}\\
+&=\sigma^2[\frac{1}{n} + \frac{(x - \bar{X})^2}{S_x^2}]
+\end{split}
+\end{displaymath}
+令$\lambda(x)=\textrm{Var}(\hat{m}(x))$，容易写出$m(x)$的置信系数为$1-\alpha$的置信区间为：
+\begin{equation}
+[\hat{m}(x) - \sqrt{\lambda(x)} t_{n-2}(\alpha/2),\hat{m}(x) + \sqrt{\lambda(x)} t_{n-2}(\alpha/2)]
+\end{equation}
+置信系数为$1-\alpha$的置信上界和置信下界为：
+\begin{equation}
+\hat{m}(x) +\sqrt{\lambda(x)} t_{n-2}(\alpha) \quad \hat{m}(x) -\sqrt{\lambda(x)} t_{n-2}(\alpha) 
+\end{equation}
+容易得到，这个$1-\alpha$的置信区间长度为$2\sqrt{\lambda(x)} t_{n-2}(\alpha/2)$与$x$有关，而$\lambda(x) = \sigma^2[1/n + (x - \bar{X})^2/S_x^2]$，可见$x$与$\bar{X}$越接近，$m(x)$的区间长度就越短。这说明在$1-\alpha$的置信系数下，$x$越靠近样本中心点$\bar{X}$,回归方程$m(x)$的精度就越高。
+
+接下来对因变量$Y$作区间预测，值得注意这里的$Y$和上面的$m(x)$不是同样的，$m(x)$是假定的线性函数$\beta_0 + \beta_1 (x-\bar{X})$，没有包含误差项$e$，而$Y$是实际的线性模型，其中包含了误差项，也就是说$Y = m(x) + e$是我们才是我们作区间预测的部分。假定$Y_0$为$x = x_0$时的真实观测值。我们用$\hat{m}(x_0)$来估计$Y_0$，显然由于$m(x)$不包含误差项，所有$Y_0$与$\hat{m}(x_0)$之间存在差距$\eta = Y_0 -\hat{m}(x_0)$，考虑$\eta$的均值和方差，注意对$e$的独立和正态假定，对均值有
+\begin{displaymath}
+\begin{split}
+E(\eta) &= E(Y_0) - E(\hat{m}(x_0))\\ 
+&= E(\hat{m}(x_0)) + E(e_0) - E(\hat{m}(x_0))\\
+&= m(x_0) + 0 - m(x_0)=0
+\end{split}
+\end{displaymath}
+对方差有，注意$Y_1, \cdots, Y_n$之间的独立性，所以$\hat{m}(x_0)$与$Y_0$独立
+\begin{displaymath}
+\begin{split}
+\textrm{Var}(\eta) &= \textrm{Var}(Y_0) + \textrm{Var}(\hat{m}(x_0))\\
+&= \textrm{Var}(m(x_0)) + \textrm{Var}(e_0)+\textrm{Var}(\hat{m}(x_0))\\
+&= 0 + \sigma^2 + \sigma^2[\frac{1}{n} + \frac{(x - \bar{X})^2}{S_x^2}]\\
+&= \sigma^2[1 + \frac{1}{n} + \frac{(x - \bar{X})^2}{S_x^2}]
+\end{split}
+\end{displaymath}
+上面的演算中，$m(x_0)$是在真实的$\beta_0$和$\beta_1$下计算得到的，此时$\beta_0$和$\beta_1$不像它们的估计量$\hat{\beta}_0$和$\hat{\beta}_1$，是一个固定的数值而非随机变量，因此$m(x_0)$是一个数值，其方差为0。
+
+用$\eta$做枢轴变量，容易得到:
+\begin{displaymath}
+\frac{\eta}{\sigma^2[1 + \frac{1}{n} + \frac{(x - \bar{X})^2}{S_x^2}]} \sim t_{n-2}
+\end{displaymath}
+由此可以写出$Y_0$在置信系数$1-\alpha$下的置信区间，为简便，记录方差为$\zeta(x) = \sigma^2[1 + 1/n + (x - \bar{X})^2/S_x^2]$。得到：
+\begin{equation}
+[\hat{m}(x_0) - \sqrt{\zeta(x_0)} t_{n-2}(\alpha/2), \hat{m}(x_0) + \sqrt{\zeta(x_0)} t_{n-2}(\alpha/2)]
+\end{equation}
+
+下面来讨论前面提到的用于描述数据的回归模型和用于预测的预测模型的精度区别的问题。当用线性模型来描述已知的数据集时相当于对线性模型$Y = m(x) + e_0$，我们要得到一条直线方程$\hat{Y} = \hat{m}(x)$来尽可能好的描述这批数据的趋势。对一个数据集中的$x_0$，带入$\hat{m}(x)$中，得到一个$Y_0$的估计量$\hat{m}(x_0)$，因为$\hat{m}(x_0)$是一个随机变量，我们当然希望这个随机变量的置信区间越短越好，前面提到，此时的区间长度为$2\hat{\sigma}[1/n + (x_0-\bar{X})^2/S_x^2]^{1/2} t_{n-2}(\alpha/2)$,可以证明当样本容量趋于$\infty$时：
+\begin{displaymath}
+\begin{split}
+\lim\limits_{n \rightarrow \infty}(\frac{1}{n}) &= 0\\
+\lim\limits_{n \rightarrow \infty}(\frac{(x_0 - \bar{X})}{S_x^2}) &= 0
+\end{split}
+\end{displaymath}
+另外，此时$\lim\limits_{n \rightarrow \infty}\hat{\sigma} = 0$，$t_{n-2}(\alpha/2)$趋于$u(\alpha/2)$，因此，此时有：
+\begin{displaymath}
+\lim\limits_{n \rightarrow \infty}2\hat{\sigma}[1/n + (x_0-\bar{X})^2/S_x^2]^{1/2} = 0
+\end{displaymath}
+可见，如果样本容量趋于无穷，回归函数$m(x)$的区间估计就精度越高，区间长度直到趋于0。而对用于预测的情况，我们得到了$Y_0$的区间长度为$2\hat{\sigma}[1 +1/n + (x_0-\bar{X})^2/S_x^2]^{1/2} t_{n-2}(\alpha/2)$。其中有一个常数项1，可见无论n怎么大，总有当$n\rightarrow \infty$，区间长度大于1的情况。故无论样本容量如何，区间预测的精度总是有一个界限，不像用于描述的情况，区间精度可以越来越高。
+
+下面用图像来展示预测和描述两种情况下的区间估计精度差异。
+```{r precision_interval_ex, eval=T, echo=F, warning=F, message=F}
+set.seed(1234)
+x_set <- c(1:100)
+rd <- rnorm(100, mean=0, sd=16)
+y_ob <- 4*x_set + 10 + rd
+lm_ep <- lm(y_ob ~ x_set, data=data.frame(x_set, y_ob))
+x_brod <- c(-20:120)
+
+beta0_est <- lm_ep$coefficients[1] + (lm_ep$coefficients[2] * mean(x_set))
+beta1_est <- lm_ep$coefficients[2]
+sigmavar_est <- sum(lm_ep$residuals^2) / (length(x_set) - 2)
+y_est <- lm_ep$fitted.values
+y_brod <- predict.lm(lm_ep, newdata = data.frame(x_set = x_brod))
+var_x_set <- var(x_set)
+t_025 <- qt(0.025, df=length(x_set)-2, ncp=0, lower.tail=F)
+
+mx_var <- sigmavar_est * ((1/length(x_set)) + ((x_brod - mean(x_set))^2 / var_x_set))
+y_var <- sigmavar_est * (1 + (1/length(x_set)) + ((x_brod - mean(x_set))^2 / var_x_set))
+mx_est_lwr <- y_brod - (sqrt(mx_var) * t_025)
+mx_est_upr <- y_brod + (sqrt(mx_var) * t_025)
+y_est_lwr <- y_brod - (sqrt(y_var) * t_025)
+y_est_upr <- y_brod + (sqrt(y_var) * t_025)
+```
+
+```{r precision_graph, eval=T, echo=F, warning=F, message=F, error=F,fig.height=3, fig.width=4}
+fig_precision <- ggplot(data=data.frame(x_brod, y_brod, mx_est_lwr, mx_est_upr, y_est_lwr, y_est_upr)) + geom_point(data = data.frame(x_set, y_ob), aes(x_set, y_ob), size=0.5) + geom_line(aes(x_brod, mx_est_lwr), colour="darkgreen") + geom_line(aes(x_brod, mx_est_upr), colour = "darkgreen") + geom_line(aes(x_brod, y_est_lwr), colour="red") + geom_line(aes(x_brod, y_est_upr), colour="red") + geom_line(aes(x_brod, y_brod), colour="blue")
+fig_precision <- fig_precision + xlab("x") + ylab("y")
+fig_precision
+```
+
+上图中，蓝色直线是回归方程是对$m(x)$的点估计，绿色曲线是对回归方程$m(x)$的区间估计，红色曲线是对$Y$的区间估计，可以看到，$m(x)$的区间估计在$x = \bar{X}$的附近基本贴合在回归直线上，这说明在这个范围内的估计$\hat{m}(x)$很接近真实的$m(x)$，具有很高的精度。而在距离$\bar{X}$较远的两端，蓝色直线与绿色曲线的距离越来越大，表明点估计$\hat{m}(x)$与真实的$m(x)$距离越来越远，精度越来越差。
+
+下面来看红色曲线，可以发现红色曲线同样也有与蓝色曲线类似的趋势，在$x = \bar{X}$的附近区间较短，精度较高，在远离$\bar{X}$的区域精度越来越差，但红色曲线所夹区间长度总比绿色曲线长，表明预测的$\hat{Y}$的精度总要比用于描述的$\hat{m}(x)$要差一些。
+
+\subsubsection{假设检验}
+
+在得到线性函数$\hat{m}(x)$后，最有用的是通过假设检验来验证$\hat{m}(x)$中参数$\hat{\beta}_1$和$\hat{\beta}_2$是否接近一个数，最常用的是考虑它们是否与0接近，因为一旦被证明与0接近，尤其是$\hat{\beta}_1=0$被接受，说明线性模型的斜率项为0，那么这说明因变量和自变量之间的相关性很弱。
+
+*1. 对$\hat{\beta}_1$的假设检验*
+
+首先确定假设检验的问题：
+\begin{displaymath}
+\begin{split}
+H_0: \beta_1 &= c;\\
+H_1: \beta_1 &\neq c;
+\end{split}
+\end{displaymath}
+根据这个假设检验问题，已经得到了$\beta_1$的估计量为$\hat{\beta}_1$，很容易写出一个用来检验上述假设问题的检验$\Phi$:
+\begin{equation}
+\begin{split}
+\Phi: &|\hat{\beta}_1 - c| \leq \varepsilon,\mbox{接受}H_0;\\
+      &|\hat{\beta}_1 - c| > \varepsilon,\mbox{拒绝}H_0
+\end{split}
+\end{equation}
+
+要让检验$\Phi$有检验水平为$\alpha$，根据检验水平的定义\eqref{jianyanshuiping}：
+\begin{displaymath}
+\beta_{\Phi} = P(|\hat{\beta}_1 - c| > \varepsilon) \leq \alpha; \quad \forall \beta_1 \in H_0
+\end{displaymath}
+
+我们知道$\hat{\beta}_1$有$E(\hat{\beta_1}) = \beta_1$，$\textrm{Var}(\hat{\beta}_1) = \hat{\sigma}^2/S_x^2$，由于$\sigma$未知，所以用$\hat{\sigma}$代替，这样随机变量：
+\begin{displaymath}
+\frac{\hat{\beta}_1 - \beta_1}{\hat{\sigma}^2 / S_x^2} \sim t_{n-2}
+\end{displaymath}
+
+由上面结论，由此推出检验临界值$\varepsilon$：
+\begin{displaymath}
+\begin{split}
+P(\frac{|\hat{\beta}_1 - c|}{\hat{\sigma} S_x^{-1}} &\geq \frac{\varepsilon}{\hat{\sigma} S_x^{-1}}) = \alpha\\
+\Phi(-\frac{\varepsilon}{\hat{\sigma}S_x^{-1}}) &+ 1 - \Phi(\frac{\varepsilon}{\hat{\sigma}S_x^{-1}}) = \alpha\\
+\Phi(\frac{\varepsilon}{\hat{\sigma}S_x^{-1}}) &= 1 - \frac{\alpha}{2}\\
+\frac{\varepsilon}{\hat{\sigma}S_x^{-1}} &= t_{n-2}(\alpha/2)\\
+\varepsilon &= \hat{\sigma} S_x^{-1} t_{n-2}(\alpha/2)
+\end{split}
+\end{displaymath}
+
+由上面的结果，将检验$\Phi$改写为：
+\begin{equation}
+\begin{split}
+\Phi: &|\hat{\beta}_1 - c| \leq \hat{\sigma} S_x^{-1} t_{n-2}(\alpha/2),\mbox{接受}H_0;\\
+      &|\hat{\beta}_1 - c| > \hat{\sigma} S_x^{-1} t_{n-2}(\alpha/2),\mbox{拒绝}H_0
+\end{split}
+\end{equation}
+
+*2. 对$\hat{\beta}_0$的假设检验*
+
+仿照1中的论证过程，直接写出检验$\Psi$为：
+\begin{equation}
+\begin{split}
+\Psi: &|\hat{\beta}_0 - c| \leq \frac{\hat{\sigma}}{\sqrt{n}} t_{n-2}(\alpha/2),\mbox{接受}H_0;\\
+      &|\hat{\beta}_0 - c| > \frac{\hat{\sigma}}{\sqrt{n}} t_{n-2}(\alpha/2),\mbox{拒绝}H_0
+\end{split}
+\end{equation}
+
+\subsection{多元线性回归}
+当自变量为多个时，如$X_1, \cdots, X_p$线性模型变成如下形式：
+\begin{equation}
+\label{mult_linearmodel}
+\begin{split}
+&Y = b_0 + b_1 X_1 + \cdots + b_p X_p + e\\
+&e_1, \cdots, e_n \mbox{同分布};E(e_i)=0;\textrm{Var}(e_i) \in (0, \infty)
+\end{split}
+\end{equation}
+这里假设对这批自变量$X_1, \cdots, X_p$和$Y$进行$n$次观测，得到一组数据，记录为如下：
+\begin{displaymath}
+\begin{pmatrix}
+X_{11} & X_{21} & \cdots & X_{p1} & Y_1 \\
+X_{12} & X_{22} & \cdots & X_{p2} & Y_2 \\
+\vdots & \vdots & \ddots & \vdots & \vdots \\
+X_{1n} & X_{1n} & \cdots & X_{pn} & Y_n
+\end{pmatrix}
+\end{displaymath}
+
+上面这个矩阵中一行代表了一次观测，同样的类似一元线性模型，也可以写出多元下的中心化模型，只需要算出每个$X_k$在$n$次观测下的平均值，则得到：
+\begin{displaymath}
+\begin{split}
+\bar{X}_k &= \frac{X_{k1} + \cdots + X_{kn}}{n}\\
+X_{ki}^* &= X_{ki} - \bar{X}_k \quad (i = 1, \cdots, n;k = 1, \cdots, p)
+\end{split}
+\end{displaymath}
+
+这样，中心化的多元线性模型表示为：
+\begin{equation}
+\begin{split}
+&Y_i = \beta_0 + \beta_1 X_{1i}^* + \cdots + \beta_p X_{pi}^* + e_i \quad (i = 1, \cdots, n)\\
+&\beta_0 = b_0 + b_1 \bar{X}_1 + \cdots + b_p\bar{X}_p\\
+&\beta_k = b_k \quad (k = 1, \cdots, p) 
+\end{split}
+\end{equation}
+
+\subsubsection{最小二乘估计}
+为简便，直接写出$\beta_1, \cdots, \beta_n$和$\beta_0$的估计表达式子，详细证明见陈希孺《概率论与数理统计》的6.3节。
+首先定义几个矩阵和向量，方便表述。对经过中心化的观测$X_{ki}$，定义一个$p\times n$的矩阵：
+\begin{displaymath}
+X = \begin{pmatrix}
+X_{11} & X_{12} & \cdots & X_{1n}\\
+X_{21} & X_{22} & \cdots & X_{2n}\\
+\vdots & \vdots & \ddots & \vdots\\
+X_{p1} & X_{p2} & \cdots & X_{pn}
+\end{pmatrix}
+\end{displaymath}
+这个矩阵一般称为*设计矩阵*，不过这里的$X_{ki}$是经过中心化的，与原始的矩阵不同。接下来定义一个方阵$L_{p\times p}$，其中元素满足$l_{uv} = \sum\limits_{i=1}^n X_{ui}X_{vi}$。
+\begin{displaymath}
+L = \begin{pmatrix}
+l_{11} & l_{12} & \cdots & l_{1p}\\
+l_{21} & l_{22} & \cdots & l_{2p}\\
+\vdots & \vdots & \ddots & \vdots\\
+l_{p1} & l_{p2} & \cdots & l_{pp}
+\end{pmatrix}
+\end{displaymath}
+
+把因变量$Y_i$，未知的$\beta$，估计量$\hat{\beta}$以及方程组中的要求解的量$\alpha$写成列向量：
+\begin{displaymath}
+Y_{(n)} = \begin{pmatrix}
+Y_1\\ \vdots \\Y_n
+\end{pmatrix},
+\beta = \begin{pmatrix}
+\beta_1\\ \vdots \\ \beta_n
+\end{pmatrix},
+\hat{\beta} = \begin{pmatrix}
+\hat{\beta}_1\\ \vdots \\ \hat{\beta}_n
+\end{pmatrix}
+\alpha = \begin{pmatrix}
+\alpha_1 \\ \vdots \\ \alpha_n
+\end{pmatrix}
+\end{displaymath}
+
+由此，写出一个用来解$\alpha$的方程：
+\begin{equation}
+L \alpha = X Y_{(n)}
+\end{equation}
+这个方程组称为正则方程，由于$L$是方阵，当且仅当$\textrm{rank}(L) = p$即$L$是一个满秩方阵时，正则方程有唯一解，此时的解就是我们对$\beta$的估计量$\hat{\beta}$：
+\begin{equation}
+\label{multi_olsestimator}
+\begin{split}
+\hat{\beta}_0 &= \bar{Y}\\
+\hat{\beta} &= L^{-1} X Y_{(n)}
+\end{split}
+\end{equation}
+
+能够证明\eqref{multi_olsestimator}中的两个估计量满足如下性质
+\begin{enumerate}
+\item $\hat{\beta}_0$和$\hat{\beta}$都是$\beta_0$和$\beta$的无偏估计
+\item $\textrm{Cov}(\hat{\beta}_0, \hat{\beta}_j) = 0(j=1, \cdots, p)$，即$\beta_0$和$\beta_j$之间不相关
+\item $\textrm{Var}(\hat{\beta}_0) = \sigma^2/n$，若：
+\begin{displaymath}
+C = (c_{ij}) = L^{-1}
+\end{displaymath}
+则有：$\textrm{Var}(\hat{\beta}_j) = c_{jj}\sigma^2$，$\textrm{Cov}(\hat{\beta}_j, \hat{\beta}_k) = c_{jk}\sigma^2$
+\end{enumerate}
+
+同样的，也能根据一元线性模型中关于误差方差的估计，来得到多元下的情况，可以证明：
+\begin{equation}
+\hat{\sigma}^2 = \frac{\sum\limits_{i=1}^n \delta_i^2}{n-p-1}
+\end{equation}
+同样的当误差服从正态分布$e_i \sim N(0, \sigma^2)$时：
+\begin{equation}
+\sum\limits_{i=1}^n \delta_i^{2}/ \sigma^2 = \chi_{n-p-1}^2
+\end{equation}
+这里的自由度为$n - p - 1$，显然一共有$\beta_0$，$\beta_1,\cdots, \beta_p$即$p+1$个参数要估计，故用去$p+1$个自由度。
+
+\subsubsection{假设检验问题}
+类似于一元线性模型对误差的要求，这里的多元模型下的假设检验同样在随机误差满足正态分布的前提下进行。由于回归系数$\beta_j$有多个，所以检验问题的提法也有下面这几种。
+
+*1. 单个回归系数的检验*
+
+单个回归系数的检验与一元形式无太大不同，这里检验问题为$H_0:\beta_j=c$，则得到一个$t$检验：
+\begin{displaymath}
+\Phi: \mbox{当}|\hat{\beta}_j - c| \leq \hat{\sigma}\sqrt{c_{ij}}t_{n-p-1}(\alpha/2)\mbox{时接受$H_0$，不然否定$H_0$}
+\end{displaymath}
+
+*2. 全体回归系数皆为0的检验*
+
+此时原假设为$H_0:\beta_1 = \beta_2 = \cdots = \beta_p=0$。当满足这个假设时，多元线性模型\eqref{mult_linearmodel}变成：
+\begin{equation}
+\label{false_mult}
+Y_i = \beta_0 + e_i \quad (i=1, \cdots, n)
+\end{equation}
+此时说明模型的自变量$X_1, \cdots, X_p$对因变量$Y$关系很小或者无意义。在此模型下的残差平方和可以计算：
+\begin{displaymath}
+R_2 = \min\limits_{\beta_0}\sum\limits_{i=1}^n (Y_i - \beta_0)^2 = \sum\limits_{i=1}^n (Y_i - \bar{Y})^2
+\end{displaymath}
+与\eqref{mult_linearmodel}的模型相比，模型\eqref{false_mult}的残差平方和一定不会小于前者，如果前者的残差平方和记为$R_1$，那么$R_2 - R_1$可以作为$H_0$的一个衡量，差值越小，说明越与$H_0$接近。可以证明，当$H_0$成立时，$R_2 -R_1$的分布满足：
+\begin{displaymath}
+\frac{1}{\sigma^2}(R_2 - R_1) \sim \chi_p^2, \mbox{$R_2-R_1$与$\hat{\sigma}^2$独立}
+\end{displaymath}
+如果$\sigma^2$未知，用$\hat{\sigma}^2$来代替，则分布变成：
+\begin{equation}
+\frac{1}{p}(R_2 - R_1)/\hat{\sigma}^2 \sim F_{p, n-p-1}
+\end{equation}
+这样得到一个检验法，一般称之为$F$检验：
+\begin{equation}
+\frac{1}{p} \sum\limits_{j=1}^p \hat{\beta}_j \sum\limits_{i=1}^n X_{ji}Y_i / \hat{\sigma}^2 \leq F_{p, n-p-1}(\alpha) \mbox{时接受$H_0$，反之就拒绝$H_0$}
+\end{equation}
+
+\subsection{相关分析}
+\subsubsection{相关系数的估计和检验}
+对于符合联合分布的$N(a, b, \sigma^2_1, \sigma^2_2, \rho)$的两个随机变量$X_1, X_2$，可以用一下式子来衡量两者之间相关性：
+\begin{equation}
+\label{rho_true}
+\rho = \frac{\textrm{Cov}(X_1, X_2)}{\sqrt{\textrm{Var}(X_1)\textrm{Var}(X_2}}
+\end{equation}
+
+通过以上式子可以引申出对$\rho$的一个估计方法，若有对上面$X_1,X_2$的一系列观测值$(X_{11}, X_{21})\cdots(X_{1n}, X_{2n})$，则可提出如下的估计量：
+\begin{equation}
+\label{rho_estimator}
+r = \frac{\sum\limits_{i=1}^n(X_{1i} - \bar{X}_1)(X_{2i} - \bar{X}_2)}{\sqrt{\sum\limits_{i=1}^n (X_{1i} - \bar{X}_1)^2 \sum\limits_{i=1}^n (X_{2i} - \bar{X}_2)^2}}
+\end{equation}
+一般把这个估计量$r$称之为*样本相关系数*
+
+由此提出的一个统计假设问题是关注$H_0:\rho = 0$，可以推出一个检验为：
+\begin{displaymath}
+\mbox{当}|r| \leq \frac{t_{n-2}(\alpha/2)}{\sqrt{n-2 + t_{n-2}^2(\alpha/2)}}\mbox{时接受$H_0$，不然拒绝$H_0$}
+\end{displaymath}
+
+\subsubsection{偏相关与复相关}
+
+*1.偏相关的概念和计算*
+现实情况下，两个随机变量之间的关系可能还受到一些其他变量的影响。如人的饮食消费和衣着消费显然是收到总收入的影响的，总收入高的人群有较大可能享受更高水平的饮食和衣着，因此相当于收入同时拉动了衣着和饮食消费。这样在不对收入的影响进行消除的情况下，衣着和饮食的消费呈现正相关关系。如果尝试对收入进行分组，并在某一个组内观测衣着和饮食的关系，可能发现它们是负相关，因为收入一定的情况下，任一消费的增多必然导致其他的消费的下降。
+
+如果使用一种方法消去收入的影响，再来研究衣着和饮食的关系，这是的相关性就称之为衣着和饮食对收入的*偏相关*。
+\begin{Definition}
+一般地，对$p$个随机变量$X_1, \cdots, X_p$，把$X_3, X_4, \cdots, X_p$的影响从$X_1, X_2$中消去，得到新的部分记为$X^`_1,X_2^`$，那么把$X^`_1,X_2^`$的相关系数记为$X_1, X_2$对$(X_3, \cdots, X_p)$的偏相关系数，并记为$\rho_{12\cdot(34\cdots p)}$  
+\end{Definition}
+
+这里的“消去”指的是找到一个线性关系：
+\begin{displaymath}
+L_1(X_3, \cdots,X_p) = c_0 + c_3 X_3 + \cdots + c_p X_p
+\end{displaymath}
+使$E[X_1 - L_1(X_3, \cdots, X_p)]^2$最小，这样用$L_1$减去$X_1, X_2$就得到了消去的$X^`_1,X_2^`$
+\begin{displaymath}
+\begin{split}
+X_1^` &= X_1 - L_1(X_3, \cdots, X_p)\\
+X_2^` &= X_2 - L_2(X_3, \cdots, X_p)\\
+\end{split}
+\end{displaymath}
+如何找到这样一个$L$这里不做表述，下面给出一个通用的方法来计算偏相关系数。对$p$个自变量$X_1,\cdots,X_p$，首先计算两两之间的相关系数$\rho_{ij}$，得到一个相关系数矩阵：
+\begin{equation}
+P = \begin{pmatrix}
+\rho_{11} & \rho_{12} & \cdots & \rho_{1p}\\
+\rho_{21} & \rho_{22} & \cdots & \rho_{2p}\\
+\vdots & \vdots & \ddots & \vdots \\
+\rho_{p1} & \rho_{p2} & \cdots & \rho_{pp}
+\end{pmatrix}
+\end{equation}
+记$P_{uv}$为$P$的$(u,v)$元子式，即从$P$中划去第$u$行第$v$列的行列式，那么变量$X_1,X_2$的偏相关系数记为：
+\begin{equation}
+\label{partial_rho}
+\rho_{12\cdot(34\cdots p)} = \frac{P_{12}}{\sqrt{P_{11}P_{22}}}
+\end{equation}
+
+对偏相关系数的估计可以用样本相关系数来做出，类似的，可以得到在样本$X_{1i}, \cdots, X_{pi} ,(i=1,\cdots, n)$下的样本相关系数矩阵：
+\begin{equation}
+R = \begin{pmatrix}
+r_{11} & r_{12} & \cdots & r_{1p}\\
+r_{21} & r_{22} & \cdots & r_{2p}\\
+\vdots & \vdots & \ddots & \vdots \\
+r_{p1} & r_{p2} & \cdots & r_{pp}
+\end{pmatrix}
+\end{equation}
+
+则对偏相关系数$\rho_{12\cdot(34\cdots p)}$的估计为：
+\begin{equation}
+\label{partial_rho_estimator}
+r_{12\cdot(34\cdots p)} = \frac{R_{12}}{\sqrt{R_{11}R_{22}}}
+\end{equation}
+
+*2.复相关的概念和计算*
+
+也有可能有这样一种情况，一组变量$X_1, \cdots, X_p$中，$X_1$可能对单独的$X_j$关系不显著，但却对全体的$X_2,\cdots, X_p$中的某个线性组合有较强的相关性。例如某农作物的产量与它一年内各个月的降水量，可能与某个月的降水量关系不大，但它肯定与一年的降雨总量有较强的关系。这种情况下的相关性就称之为*复相关*
+
+类似于前面的偏相关，这里是要找一个线性组合$L(X_2, \cdots, X_p)$，使得$E[X_1 - L(X_2, \cdots, X_p)]^2$最小，然后求出$X_1$与$L(X_2, \cdots, X_p)$的相关系数。这里的求法和偏相关也类似，都是先给出相关系数矩阵，然后根据式子：
+\begin{equation}
+\label{multiple_correlation}
+\rho_{1(23\cdots p)} = \sqrt{1 - \frac{|P|}{P_{11}}}
+\end{equation}
+
+同样的，用样本相关系数来估计偏相关系数：
+\begin{equation}
+\label{multiple_correlation_estimator}
+r_{1(23\cdots p)} = \sqrt{1 - \frac{|R|}{R_{11}}}
+\end{equation}
