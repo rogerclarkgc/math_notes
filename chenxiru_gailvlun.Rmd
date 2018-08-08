@@ -1,5 +1,5 @@
 ---
-title: "陈希孺概率论与数理统计读书笔记"
+title: "陈希孺概率论与数理统计读书笔记-数理统计部分"
 author:
   - RogerClark
 documentclass: ctexart
@@ -22,17 +22,9 @@ vplayout <- function(x, y){
 \newtheorem{theorem}{\hspace{2em}定理}
 \newtheorem{lemma}{\hspace{2em}例子}
 \newtheorem{Proof}{证明}
-\section{事件的概率}
 
-（暂空）
 
-\section{随机变量及概率分布}
 
-（暂空）
-
-\section{随机变量的数字特征}
-
-（暂空）
 
 \section{参数估计}
 
@@ -1662,3 +1654,177 @@ r_{12\cdot(34\cdots p)} = \frac{R_{12}}{\sqrt{R_{11}R_{22}}}
 \label{multiple_correlation_estimator}
 r_{1(23\cdots p)} = \sqrt{1 - \frac{|R|}{R_{11}}}
 \end{equation}
+
+\subsection{方差分析}
+\subsubsection{单因素完全随机化试验的方差分析}
+
+单因素的试验指得是只有一个因素影响试验结果的情况，如试验几种降压药对治疗高血压的作用，这里影响高血压疗效的只有“降压药”一个因素，而药品的种类就是因素的*水平*，一般为了消除随机误差，会把一个水平的药物重复试验几次，这就叫做某个水平的*重复度*。
+
+```{r var_ex_table, eval=T, echo=F, warning=F, message=F, error=F}
+tom <- rep(c("A", "B", "C", "D"), each=3)
+patientid <- c(1:length(tom))
+res_tom <- c(0.85, 0.87, 0.84, 0.40, 0.45, 0.44, 0.90, 0.93, 0.88, 0.76, 0.75, 0.77)
+dat <- data.frame(patientid, tom, res_tom)
+colnames(dat) <- c("PatientID", "Medicine", "Result")
+dat
+```
+
+如上面的例子，这就是一个有四个水平，每个水平重复度为3的单因素试验结果。
+
+考虑只有一个因素$A$，有$k$个水平，以$Y_{ij}$代表第$i$个水平的第$j$个观察值，那么单因素方差模型为：
+\begin{equation}
+\label{single_variancemodel}
+Y_{ij} = a_i + e_{ij} \quad (j=1, \cdots, n_i;i=1, \cdots, k)
+\end{equation}
+这里$a_i$相当于在水平$i$下的理论平均值，称为水平$i$的*效应*，$e_{ij}$是对水平$i$第$j$次观测时的随机误差，对随机误差的要求有:$E(e_{ij}) = 0, \textrm{Var}(e_{ij}) \in (0, \infty)$且所有$e_{ij}$独立同分布。$n_i$是各个水平下的重复度，一般我们设计试验是让各个水平的重复度一样，但也有不一样的情况。
+
+单因素试验一个重要目的就是研究各个水平的效应是否相同，从模型上来说就是各个$a_i$是否相同，如果能验证得到$a_i$是不同的，就能说明因素$A$的效应是显著的，反之$a_i$相同，说明因素$A$的效应不显著。实际上就是考虑假设问题：
+\begin{equation}
+\label{same_ahyper}
+H_0 : a_1 = a_2 = \cdots = a_k
+\end{equation}
+
+如果因素$A$是显著的，那么各个水平之间的效应值应该不同，则各个水平之间观测值的差异应该比较大，为了衡量这种“全体差异”，可以考虑如下变量：
+\begin{equation}
+\label{error_sumsquare}
+SS = \sum\limits_{i=1}^k \sum\limits_{j=1}^{n_i} (Y_ij - \bar{Y})^2 \quad (\bar{Y} = \sum\limits_{i=1}^k \sum\limits_{j=1}^{n_i} \frac{Y_{ij}}{n})
+\end{equation}
+
+内部的$\sum\limits_{j=1}^{n_i}$相当于对水平$i$下的$n_i$个重复观测与总体均值的差的平方进行加和，外部的$\sum\limits_{i=1}^{k}$相当于对$k$个水平进行的误差平方和进行加和。容易理解如果$SS$越大，表明$Y_{ij}$之间差异越大，而$Y_{ij}$的差异由模型\eqref{single_variancemodel}可知，是由两部分引起，一个是$a_i$即各个水平的效应，另一个就是每次观测的随机误差$e_{ij}$。如果能对$SS$进行分解，得到因素$A$各个水平造成的部分和随机误差造成的部分，就能比较这差异的影响哪部分更大。
+
+首先看随机误差造成的影响，把这部分误差平方和记为$SS_e$，可以知道，在一个水平下的所有观测值如$Y_{1j}, \cdots, Y_{1n_i}$，它们之间产生差异的原因必然是随机误差导致，因为同一水平下效应值都是$a_1$，这与$a_i$本身的差异无关。所以仿照上面计算总体误差平方和的思路，把每个观测$Y_{1j}$与这个水平下的所有观测的均值$\bar{Y}_1$比较再做平方和：
+\begin{equation}
+\label{sse_cal}
+SS_e = \sum\limits_{i=1}^{k} \sum\limits_{j=1}^{n_i} (Y_{ij} - \bar{Y}_i)^2 \quad (\bar{Y}_i = \frac{Y_{i1} + \cdots + Y_{in_{i}}}{n_i})
+\end{equation}
+
+这样就得到了误差所占的部分计算方法，接下来考虑因素$A$解释的部分，这里记为$SS_A$，容易知道$SS_A = SS - SS_e$，这样就能计算出$SS_A$的表达式：
+\begin{displaymath}
+SS - SS_e = \sum\limits_{i=1}^k \sum\limits_{j=1}^{n_i} (Y_ij - \bar{Y})^2 - \sum\limits_{i=1}^{k} \sum\limits_{j=1}^{n_i} (Y_{ij} - \bar{Y}_i)^2
+\end{displaymath}
+为方便，先对$SS$进行分解，有$Y_{ij} - \bar{Y} = (Y_{ij} - \bar{Y}_i) + (\bar{Y}_i - \bar{Y})$，先对以上的式子进行平方，再固定$i$的情况下对$j$进行加和：
+\begin{displaymath}
+\begin{split}
+\sum\limits_{j=1}^{n_i} (Y_{ij} - \bar{Y})^2 & = \sum\limits_{j=1}^{n_i} (Y_{ij} - \bar{Y}_i)^2 + \sum\limits_{j=1}^{n_i} (Y_i - \bar{Y})^2 + \sum\limits_{j=1}^{n_i}2(Y_{ij} - \bar{Y}_i)(\bar{Y}_i - \bar{Y})\\
+&= \sum\limits_{j=1}^{n_i} (Y_{ij} - \bar{Y}_i)^2 + n_i(Y_i - \bar{Y})^2 + 0
+\end{split}
+\end{displaymath}
+以上式子对$i=1,\cdots, k$加和再与$SS_e$相减，很容易就得到$SS_A$:
+\begin{displaymath}
+\begin{split}
+SS_A &= \sum\limits_{i=1}^{k} \sum\limits_{j=1}^{n_i} (Y_{ij} - \bar{Y}_i)^2 + \sum\limits_{i=1}^{k} n_i(Y_i - \bar{Y})^2 - SS_e\\
+&= \sum\limits_{i=1}^{k} \sum\limits_{j=1}^{n_i} (Y_{ij} - \bar{Y}_i)^2 + \sum\limits_{i=1}^{k} n_i(Y_i - \bar{Y})^2 - \sum\limits_{i=1}^{k} \sum\limits_{j=1}^{n_i} (Y_{ij} - \bar{Y}_i)^2\\
+&= \sum\limits_{i=1}^{k} n_i(Y_i - \bar{Y})^2
+\end{split}
+\end{displaymath}
+这样就得到了$SS_A$的表达式：
+\begin{equation}
+\label{ssa_cal}
+SS_A = \sum\limits_{i=1}^{k} n_i(Y_i - \bar{Y})^2
+\end{equation}
+
+有了总平方和，误差平方和以及因素$A$的平方和，就可以通过设计一个检验统计量来考虑假设问题\eqref{same_ahyper}的检验。首先还是假定随机误差$e_{ij} \sim (0, \sigma^2)$，若记：
+\begin{displaymath}
+MS_A = \frac{SS_A}{k - 1} \quad MS_e = \frac{SS_e}{n-k}
+\end{displaymath}
+则统计量$MS_A / MS_e$在误差正态假定下满足分布：
+\begin{displaymath}
+\frac{MS_A}{MS_e} \sim F_{k-1, n-k}
+\end{displaymath}
+这里$MS_A$和$MS_e$是因素$A$和随机误差的平均平方和，这个检验统计量的目的很明显，如果$MS_A$与$MS_e$之比小于一定的值，说明$MS_e$占据的部分更大，那么我们应该接受$H_0$，由此设计的检验为：
+\begin{equation}
+\mbox{当}MS_A / MS_e \leq F_{k-1, n-k}(\alpha)\mbox{时接受$H_0$,不然否定$H_0$}
+\end{equation}
+
+把总平方和分级成误差平方和$SS_e$和因素平方和$SS_A$的操作就称为*方差分析*，由此进行的检验可以帮助我们解决章节开始的例子中判断减压药这效果是否有区别的问题。
+
+\begin{lemma}
+为验证四种减压药A，B，C，D是否有疗效上的区别，设计了一个单因素重复度为3的实验，实验结果如下：
+\begin{enumerate}
+\item 药物A: `r res_tom[1:3]`
+\item 药物B: `r res_tom[4:6]`
+\item 药物C: `r res_tom[7:9]`
+\item 药物D: `r res_tom[10:12]`
+\end{enumerate}
+\end{lemma}
+
+```{r ex5, eval=T, echo=F, warning=F, message=F, error=F}
+mean_restom <- mean(dat$Result)
+ss_restom <- sum((dat$Result - mean_restom)^2)
+sse_restom <- sum((res_tom[1:3] - mean(res_tom[1:3]))^2) + sum((res_tom[4:6] - mean(res_tom[4:6]))^2) + sum((res_tom[7:9] - mean(res_tom[7:9]))^2) + sum((res_tom[10:12] - mean(res_tom[10:12]))^2)
+ssa_restom <- ((mean(res_tom[1:3]) - mean_restom)^2 +(mean(res_tom[4:6]) - mean_restom)^2 +(mean(res_tom[7:9]) - mean_restom)^2 + (mean(res_tom[10:12]) - mean_restom)^2) * 3
+
+mse_restom <- sse_restom / (12 - 4)
+msa_restom <- ssa_restom / (4 - 1)
+ftest <- msa_restom/mse_restom
+fval <- qf(0.05, 3, 8, 0, lower.tail = F)
+```
+首先进行方差分析
+\begin{displaymath}
+\begin{split}
+SS &= (`r res_tom[1]` - `r mean_restom`)^2 + \cdots + (`r res_tom[12]` - `r mean_restom`)^2 = `r ss_restom`\\
+SS_e &= (`r res_tom[1]` - `r mean(res_tom[1:3])`)^2 + \cdots +(`r res_tom[12]` - `r mean(res_tom[10:12])`)^2 = `r sse_restom`\\
+SS_A &= 3 \times (`r mean(res_tom[1:3])` - `r mean_restom`)^2 + \cdots + 3 \times (`r mean(res_tom[10:12])` - `r mean_restom`)^2 = `r ssa_restom`
+\end{split}
+\end{displaymath}
+
+检查$SS = SS_e + SS_A$无误后，开始进行假设检验，检验问题即四种药物的效果是否相等。
+\begin{displaymath}
+\begin{split}
+MS_A &= \frac{`r ssa_restom`}{4-1} = `r msa_restom`\\
+MS_e &= \frac{`r sse_restom`}{12-8} = `r mse_restom`\\
+F &= \frac{MS_A}{MS_e} =  `r ftest`
+\end{split}
+\end{displaymath}
+查表得$F_{3, 8}(0.05) = `r fval`$，显然有$`r ftest` > `r fval`$，所以$H_0$不成立，这说明方差方差分析表明四种药物的效果是不同的。在方差分析证明了因素$A$几个水平之间确实存在不同的效应值后，就可以进行一步分析了，如均值的多重比较。如果无法拒绝水平效应相等的零假设，则可能是这个因素确实对试验影响不大，又或者是试验的随机误差太大导致真实的差别被掩盖，这时就需要重新考虑试验设计了。
+
+\subsubsection{两因素完全试验的方差分析}
+
+如果要研究的对象被多个因素影响，设有因素$A, B, C, \cdots,$，每个因素都有水平$k_1, k_2, k_3,\cdots$，如果要完全研究这些因素，就要设计$k_1 \times k_2 \times k_3 \cdots$个试验。这种试验方法称为*完全试验*，如果只对一部分水平组合做实验，就称为*部分试验*。
+为简单，现考虑两因素的完全试验，设有两个因素$A$和$B$，他们的水平分别为$k$个和$l$个，每个水平组合$(i, j)$下的实验结果记为$Y_{ij}$，那么统计模型表述为：
+\begin{equation}
+\label{bivariate_devmodel}
+Y_{ij} = \mu + a_i + b_i + e_{ij} \quad (i=1, \cdots, k;j=1, \cdots, l)
+\end{equation}
+随机误差$e_{ij}$的同样满足$E(e_{ij}) = 0;\textrm{Var}(e_{ij}) \in (0, \infty)$，而另一部分$\mu + a_i + b_i$是在水平组合$(i, j)$下的平均效应。其中$\mu$是总体平均，是一切水平组合下的平均值，相当于一个基准。$a_i$是因素$A$在水平$i$下的平均效应，越大表明效应越明显，$b_i$的意义与$a_i$类似。我们还要让其满足如下条件：
+\begin{equation}
+\label{constrait_for_twolevels}
+a_1 + \cdots + a_k = 0, \quad b_1 + \cdots + b_l = 0
+\end{equation}
+加上以上的约束条件后，可以很容易的给出一个$\mu$的估计量$Y_{..}$，首先把$Y_{ij}$对$i$和$j$相加：
+\begin{equation}
+\begin{split}
+&\sum\limits_{i=1}^k \sum\limits_{j=1}^l Y_{ij} = kl\mu + \sum\limits_{i=1}^k \sum\limits_{j=1}^l e_{ij}\\
+&\mbox{同时除以$kl$，注意$E(e_{ij})=0$}\\
+&Y_{..} = \sum\limits_{i=1}^k \sum\limits_{j=1}^l \frac{Y_{ij}}{kl}
+\end{split}
+\end{equation}
+用类似的方法，可以分别得到$a_i$和$b_j$的估计量，把$Y_{ij}$只对$i$或$j$相加：
+\begin{equation}
+\label{twolevels_estimator}
+\begin{split}
+\sum\limits_{j=1}^l Y_{ij} &= l \mu + la + \sum\limits_{j=1}^l e_{ij}\\
+Y_{i.} &= \sum\limits_{j=1}^l \frac{Y_{ij}}{l}\\
+\hat{a}_i &= Y_{i.} - Y_{..} \quad (i = 1, \cdots, k)\\
+&\mbox{类似，对$b_j$有}\\
+\hat{b}_j &= Y_{j.} - Y_{..} \quad (j = 1, \cdots, j)
+\end{split}
+\end{equation}
+
+有了$\mu, a_i, b_j$的估计量，可以进一步给出此情况下的方差分析：
+\begin{equation}
+\label{twolevels_devariation}
+\begin{split}
+SS &= SS_A + SS_B + SS_e\\
+&= l \sum\limits_{i=1}^k (Y_{i.} - Y_{..})^2 + k \sum\limits_{j=1}^l (Y_{.j} - Y_{..})^2 + \sum\limits_{i=1}^k \sum\limits_{j=1}^l (Y_{ij} - Y_{i.} - Y_{.j} + Y_{..})^2
+\end{split}
+\end{equation}
+
+有了以上的方差分析，并注意$SS_A$和$SS_B$的自由度就是本身的水平数目减去1，$SS$自由度为水平组合数$kl$减去1，而误差$SS_e$的自由度为$(kl-1) - (k-1) - (l-1) = (k-1)(l-1)$，可以用单因素方差分析中的检验方法，即先计算$MS_A, MS_B, MS_e$，再把$MS_A/MS_e, MS_B/MS_e$与对应$F$值比较来验证假设问题:
+\begin{displaymath}
+\begin{split}
+&H_{0A} : a_1 = \cdots = a_k = 0\\
+&H_{0B} : b_1 = \cdots = b_l = 0
+\end{split}
+\end{displaymath}
+是否成立。
