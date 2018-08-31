@@ -8,6 +8,7 @@ output:
     fig_caption: yes
     number_sections: yes
     toc: yes
+    toc_depth: 3
 classoption: "hyperref,"
 ---
 ```{r eval=T, echo=F,warning=F,message=F}
@@ -17,6 +18,14 @@ library(grid)
 vplayout <- function(x, y){
   viewport(layout.pos.row=x, layout.pos.col = y)
 }
+
+pdis <- function(n, nmean, nsd, tmean=0, each=10){
+  rs <- rnorm(n*each, mean=nmean, sd=nsd)
+  rs <- matrix(rs, ncol=each, byrow=T)
+  p_res <- apply(rs, 1, function(x){t.test(x, mu=tmean)$p.value})
+  return(p_res)
+}
+
 ```
 \newtheorem{Definition}{\hspace{2em}定义}
 \newtheorem{theorem}{\hspace{2em}定理}
@@ -493,7 +502,7 @@ R &= \{(X_1, \cdots, X_n) | X_1 + \cdots + X_n < nC\}
 通过功效函数$\beta_{\Phi}$来对假设$H_0$进行检验时，由于检验的结果是一个概率事件，那么可能出现这两种情况：
 
 1. $H_0$实际是正确的（$H_1$实际上错误），但我们却否定了$H_0$。
-2. $H_0$实际是错误的（$H_1$实际上正确），但我们却接受了$H_1$。
+2. $H_0$实际是错误的（$H_1$实际上正确），但我们却接受了$H_0$。
 
 由于检验结果是和总体的分布的参数$N(\theta,\sigma^2)$有关的，因此犯错误的类型也和这些参数有关，这一点在后面会详细解释。由此总结出第一类错误和第二类错误的数学形式：
 
@@ -528,7 +537,7 @@ R &= \{(X_1, \cdots, X_n) | X_1 + \cdots + X_n < nC\}
 则称$\Phi$为$H_0$的水平为$\alpha$的检验。
 \end{Definition}
 
-可以看到水平$\alpha$实际上指是功效函数$\beta_{\Phi}(\theta_1,\cdots,\theta_k)$的值在区间$H_0$上永远小于我们给定的$\alpha$，如果这个条件不成立，那么$\alpha$就不是这个检验$\Phi$在$H_0$上的一个水平了。（功效函数的目的就是首先保证一类错误要小于一定水平$\alpha$）。
+可以看到水平$\alpha$实际上指是功效函数$\beta_{\Phi}(\theta_1,\cdots,\theta_k)$的值在区间$H_0$上永远小于我们给定的$\alpha$（说明当$\theta_1,\cdots, \theta_k$的真实值确实是$H_0$时，拒绝它的概率是小于$\alpha$的），如果这个条件不成立，那么$\alpha$就不是这个检验$\Phi$在$H_0$上的一个水平了。（功效函数的目的就是首先保证一类错误要小于一定水平$\alpha$）。
 
 \subsubsection{一致最优检验}
 
@@ -1784,9 +1793,9 @@ F &= \frac{MS_A}{MS_e} =  `r ftest`
 为简单，现考虑两因素的完全试验，设有两个因素$A$和$B$，他们的水平分别为$k$个和$l$个，每个水平组合$(i, j)$下的实验结果记为$Y_{ij}$，那么统计模型表述为：
 \begin{equation}
 \label{bivariate_devmodel}
-Y_{ij} = \mu + a_i + b_i + e_{ij} \quad (i=1, \cdots, k;j=1, \cdots, l)
+Y_{ij} = \mu + a_i + b_j + e_{ij} \quad (i=1, \cdots, k;j=1, \cdots, l)
 \end{equation}
-随机误差$e_{ij}$的同样满足$E(e_{ij}) = 0;\textrm{Var}(e_{ij}) \in (0, \infty)$，而另一部分$\mu + a_i + b_i$是在水平组合$(i, j)$下的平均效应。其中$\mu$是总体平均，是一切水平组合下的平均值，相当于一个基准。$a_i$是因素$A$在水平$i$下的平均效应，越大表明效应越明显，$b_i$的意义与$a_i$类似。我们还要让其满足如下条件：
+随机误差$e_{ij}$的同样满足$E(e_{ij}) = 0;\textrm{Var}(e_{ij}) \in (0, \infty)$，而另一部分$\mu + a_i + b_j$是在水平组合$(i, j)$下的平均效应。其中$\mu$是总体平均，是一切水平组合下的平均值，相当于一个基准。$a_i$是因素$A$在水平$i$下的平均效应，越大表明效应越明显，$b_j$的意义与$a_i$类似。我们还要让其满足如下条件：
 \begin{equation}
 \label{constrait_for_twolevels}
 a_1 + \cdots + a_k = 0, \quad b_1 + \cdots + b_l = 0
@@ -1828,3 +1837,308 @@ SS &= SS_A + SS_B + SS_e\\
 \end{split}
 \end{displaymath}
 是否成立。
+
+\section{附录}
+\subsection{一型、二型和三型方差分析}
+
+在实际使用方差分析时，会发现许多软件都提供三种方差分析，分别称为“Type-i”，“Type-ii”和“Type-iii”。这里简称为“一型”、“二型”和“三型”方差分析。在R语言里，stat包里anova函数采用的是一型的方差分析，如果要使用后面两种，需要额外加载car包并使用里面的Anova函数。这三种方差分析，尤其是一型与其他两种之间，有较大的不同，下面就来介绍这三种方差分析的不同之处。
+
+\subsubsection{一型方差分析}
+一型方差分析是有顺序性的，如果对于一个两个因子$A$和$B$的方差模型：
+\begin{displaymath}
+y_{ij} = \mu + a_i + b_j + c_{ij} + e_{ij}
+\end{displaymath}
+用$SS_A,SS_B, SS_{AB},SS_{A,B}$分别代表因子$A$，因子$B$，交互效应和总体模型的方差，一型方差分析会按照如下顺序计算：
+\begin{enumerate}
+\item 首先计算$SS_A$
+\item 去除因子$A$的效应来计算$SS_{B}$
+\item 去除因子$A$和$B$的效应计算交互项$SS_{AB}$
+\end{enumerate}
+一型方差分析是根据模型里因子的顺序来计算方差的，对于非均衡的因子层次，这种计算方式会因为计算顺序不同而导致结果差异，进而产生功效不足的问题。（对均衡设计的实验，这三种方差分析结果是相同的）
+
+以$mtcars$数据集为例，这个数据集有多个因子对因变量$mpg$产生影响，现只考虑变量$vs$和$gear$，这时数据的层次如下
+```{r vartype_ex, echo=F, eval=T, message=F, warning=F, error=F}
+library(car)
+with(mtcars, table(vs, gear))
+```
+
+可以看到因子$gear$有三个层次，$vs$有两个层次，各个层次组合里观测数不一样，是一个非均衡实验设计。如果使用的一型方差分析。结果会随着因子顺序不同而变化：
+
+```{r change_var1, echo=T, eval=T, message=F, warning=F, error=F}
+mtc <- mtcars
+mtc$vsf <- as.factor(mtcars$vs)
+mtc$gearf <- as.factor(mtcars$gear)
+#效应gear在前
+anova(lm(mpg ~ gearf + vsf, data=mtc))
+#效应vs在前
+anova(lm(mpg ~ vsf + gearf, data=mtc))
+```
+
+可以看到，结果发生了变化，把$gear$当第一个变量作为主效应时，具有强的显著性，而当成第二个变量的显著性就要低的多。这种情况对一型检验的功效性产生了影响，如果检验统计量$F$恰好在设定的$u_{\alpha}$附近，调换位置就是否接受零假设造成很大影响。
+
+\subsubsection{二型方差分析}
+二型方差分析没有主效应和副效应的区分，对所有的效应都是在去除其他效应影响的前提下进行，也就是说
+\begin{enumerate}
+\item 去除因子$B$的效应来计算$SS_{A}$
+\item 去除因子$A$的效应来计算$SS_{B}$
+\item 去除因子$A$和$B$的效应计算交互项$SS_{AB}$
+\end{enumerate}
+
+这样来看，二型分析其实可以用多次一型分析来代替，首先进行先$A$后$B$的一型分析，然后进行先$B$后$A$的一型分析，这样作为副效应的两个因子的$F$值是一样的。
+
+R语言下默认没有提供二型分析，需要加载car包使用Anova函数来进行
+```{r change_var2, echo=T, eval=T, message=F, warning=F, error=F}
+#效应gear在前
+Anova(lm(mpg ~ gearf + vsf, data=mtc), type=2)
+#效应vs在前
+Anova(lm(mpg ~ vsf + gearf, data=mtc), type=2)
+```
+
+可以看出，对不均衡设计，使用二型方差分析，即使交换了因子顺序也不会产生结果上的变化。这样比一型方差分析功效更强。
+
+\subsubsection{三型方差分析}
+
+前面的两种方差分析都没有在方差分解时去除交互效应的影响，而三型方差分析假定交互效应是存在且显著的，并且总是会从方差分解中去除这一影响。
+\begin{enumerate}
+\item 去除因子$B$和交互项的效应来计算$SS_{A}$
+\item 去除因子$A$和交互项的效应来计算$SS_{B}$
+\item 去除因子$A$和$B$的效应计算交互项$SS_{AB}$
+\end{enumerate}
+
+三型方差分析同二型一样，不会受方差分解时因子的顺序而影响，但当交互效应不显著或者不存在时，三型方差分析会大大降低分析的功效，让一些本来显著的因子得出不甚显著的结果，还是用$mtcars$数据来做例子
+```{r change_var3, echo=T, eval=T, message=F, warning=F, error=F}
+#效应gear在前
+Anova(lm(mpg ~ gearf * vsf, data=mtc), type=3)
+#效应vs在前
+Anova(lm(mpg ~ vsf * gearf, data=mtc), type=3)
+```
+可以看到原本显著的因子$vs$和$gear$现在显著性大大降低，这样的结果与前面的相差很大。
+
+\subsubsection{三种方法的比较}
+
+对因子层次均衡且因子直接相互正交的实验数据（即不存在交互效应），三种方法结果上没有区别，如果是不均衡的实验设计且确定因子之间存在交互作用，三型分析较之二型分析更有效，反之，交互效应不显著，二型分析更优。
+
+可以按照如下的步骤来进行选择使用何种方差分析：
+\begin{enumerate}
+\item 先用一型方差分析来探索模型，确认交互项是否存在
+\item 如果存在交互效应，使用三型方差分析更优，如果不存在，使用二型
+\item 对均衡的因子设计，没有发现交互效应时，三种方法结果一样
+\end{enumerate}
+
+关于如何选择方法上，Øyvind Langsrud的论文“ANOVA for unbalanced data: Use Type II instead of Type III sums of squares”有详细论述。
+
+\subsection{对p值的理解}
+
+在计算许多统计模型的参数时，现今的统计软件常常计算模型中参数的P值来辅助我们进行统计推断，并且常常有一个广泛使用的P值分割点$p.value < 0.05$来作结果“是否显著”的准则，然而统计学家设计P值的初衷却不是如此，这一广泛使用的教条给科学推断造成了一些麻烦，本文的目的在于弄清P值是什么以及把它和另一个常用的统计推断体系-基于Neyman-Pearson假设检验理论的统计推断来做一个区分。
+
+\subsubsection{实验的显著性-Fisher的思想实验}
+
+Fisher在他的《The Design of Experiments》一书中用一个思想实验来提出实验的“显著性”这一观点，这个实验可以帮助我们理解P值的定义。
+
+\begin{lemma}
+一位女士声称她能够尝出一杯奶茶是先加入茶还是先加入奶制成的，为了验证她的这个能力，实验者拿来8杯茶，4杯是先加入茶制成，另外4杯则是先加入奶制成。在实验前，实验者告诉这位女士，她接下来要品尝8杯茶，这8杯茶里有4杯先加茶，4杯先加奶。她的任务则是区分出哪些奶茶是先加奶或先加茶。实验进行时，为了防止人为因素干扰，实验者按照随机的顺序递给女士奶茶，女士品尝完后把她的结果告诉实验员。
+\end{lemma}
+
+如果女士确实有这个能力，即准确无误的区分两种奶茶，那无论怎么调换给她奶茶的顺序，她总能得到正确的结果。如果这位女士实际上不能区分，那么她可能给出的实验结果有$\textrm{C}_8^4=70$种（这相当于从8杯茶里随机拿四杯，认为它是先加奶的，那么剩下的就是先加茶的）。显然这70种组合已经包含了所有可能性，包括那个正确的组合。
+
+用随机变量$X$来表示这位女士在每种奶茶中答对的次数，如果这位女士真的得到了正确的结果，并且我们已经假定了这个女士没有区分奶茶的能力，那么相当于她在两种奶茶的测试中都答对了，这样就有$X=4$
+
+\begin{displaymath}
+\textrm{P}(X=4|\mbox{无能力区分}) = \frac{1}{70} \simeq 0.014
+\end{displaymath}
+
+如果这位女士没有区分奶茶的能力，她得到正确结果的可能性只有$1.4\%$，这是一个比较小的概率，在这个实验中，我们可以这么说：“*在假定女士没有分辨能力的前提下*，这位女士正确区分8杯茶的可能性是0.014，我们认为在这种前提下，产生这种结果的可能性是很低的”
+
+如果两组奶茶中，这位女士各答对3次错误1次，那么此时的概率应该为：
+\begin{displaymath}
+\textrm{P}(X=3|\mbox{无能力区分}) = \frac{\textrm{C}_4^3 \times \textrm{C}_4^3}{70} = \frac{16}{70} \simeq 0.229
+\end{displaymath}
+
+这个概率比$5\%$大多了，那我们可以这么说这个实验：“*在假定女士没有分辨能力的前提下*，这位女士的结果是两种奶茶各答对3次弄错1次，在这种前提下，产生这种结果的可能性是0.229，这种可能性比较大，不应该被忽视”
+
+Fisher认为除了计算这个“答对3次答对1次”的概率外，还要计算*更好情况下*的结果，即“全答对”的情况，那么这个概率就变成了$\textrm{P}(X\geq3|\mbox{无能力区分})=(16 +1)/70 \simeq 0.243$。那么这个实验的结果可以这样说：“*在假定女士没有分辨能力的前提下*，这位女士的结果是两种奶茶各答对3次弄错1次，在这种前提下，这位女士答对大于等于3次的可能性是0.243，这种可能性比较大，不应该被忽视”
+
+Fisher把计算这个概率并给出相关推断的过程称为“Test of significance”，他把计算得到的概率称为"Significance"即实验的显著性。在上面的例子中，如果实验结果是这位女士全部答对，我们计算得到这位女士在无能力前提下的概率是$0.014$，是一个比较小的概率，我们称这一实验结果是“显著的”。
+
+在前面的计算中，可以发现我们实际是计算的一个条件概率，这个条件是“这位女士没有分辨能力”。Fisher把这个条件称之为实验的*零假设*（null hypothesis）。零假设的特点是确切的并且是可验证的，正如这个实验的零假设一样。反过来，如果我们的零假设是“这个女士有分辨能力”，那么无论我们做多少次实验并得到女士答对的结果，都不能成为支持这个假设的证据，因为只要在某次实验中这个女士没有答对，假设就不成立。在这个前提下，通过有限次数的实验来验证这个零假设是不可能的。
+
+\subsubsection{P值的基本定义}
+
+P值基本可以认为是Fisher推广并发扬光大的一种统计推断方法，Fisher认为，要想检验一个样本是否符合某种统计上的特征，可以用以下下思路来进行。为了方便描述，首先假设通过一次抽样得到一组样本$x_1, x_2,\cdots, x_k$，需要看看这组样本是否是来自满足分布为$N(0, 1)$的总体。要想完整的解决这个问题，需要考虑如下三个方面：
+
+\begin{enumerate}
+\item 样本是否是来自均值为0的总体
+\item 样本是否是来自方差为1的总体
+\item 样本是否是来自正态分布的总体
+\end{enumerate}
+
+以上三个问题就引申出来三个针对样本的假设，即*零假设*，为了方便，我们只考虑第一个问题并确认样本的确来自方差为1的正态总体，这样的话，零假设可以这么提：样本是来自均值为0的总体。有了这样的假设，我们用Fisher的思想来看看怎么来用P值来作统计推断
+\begin{enumerate}
+\item 假定零假设是正确的，在这样的前提下，用样本均值$\bar{X}$来做检验统计量
+\item 在零假设的前提下，这样问题就变成了产生比$\bar{X}$“更极端”的数据的概率是多少？
+\item 显然这个问题可以用计算条件概率来解决，即变成计算$\textrm{Pr}(|\bar{X}|>0|\mu=0)$
+\end{enumerate}
+
+Fisher把他的这套检验称为“test of significance”，即“显著性检验”，把P值称为结果的“显著性”，并且认为出现小的P值往往意味着强的显著性。这样可以引申出一个针对P值的定义：
+
+\begin{Definition}
+P值：在一个特定的统计模型下，一个统计量出现与观测值相等或更极端的事件的概率
+\end{Definition}
+
+这里的“特定”的统计模型，一般指的是针对问题而提出的一个*明确*、*可验证*的零假设，而“更极端”的则有三种情况来计算P值：
+
+\begin{enumerate}
+\item $\textrm{P}(X|X \geq C|H_0)$的右尾事件
+\item $\textrm{P}(X|X \leq C|H_0)$的左尾事件
+\item $2\min\{\textrm{P}(X\leq C|H_0),\textrm{P}(X \geq C|H_0)\}$的双尾事件
+\end{enumerate}
+
+```{r extrem_events, eval=T, echo=F, warning=F, message=F, error=F, fig.height=3, fig.width=4}
+x <- seq(-5, 5, 0.1)
+y <- dnorm(x, mean=0, sd=1.5)
+const <- qnorm(0.05, mean=0, sd=1.5)
+rxseq <- seq(-const, 5, 0.5)
+lxseq <- seq(-5, const, 0.5)
+n <- length(rxseq)
+ryseq <- dnorm(rxseq, mean=0, sd=1.5)
+lyseq <- dnorm(lxseq, mean=0, sd=1.5)
+rxseq <- rep(rxseq, each=2)
+lxseq <- rep(lxseq, each=2)
+ryseq <- rep(ryseq, each=2)
+lyseq <- rep(lyseq, each=2)
+s <- rep(c(T, F),n)
+ryseq[s] <- 0
+lyseq[s] <- 0
+rig <- data.frame(x=rxseq, y=ryseq)
+lef <- data.frame(x=lxseq, y=lyseq)
+fig_extrem <- ggplot() + geom_line(data=data.frame(x, y), aes(x, y), colour="blue")
+fig_extrem <- fig_extrem + geom_line(data=rig, aes(x, y)) + geom_line(data=lef, aes(x, y))
+fig_extrem <- fig_extrem + xlab("set of possible observations") + ylab("Probability density")
+fig_extrem
+```
+
+上面的图像就是一个双侧事件的例子，这个更极端的情况就是指当数据落在折线段的区域时的情形。
+
+Fisher的这个思想有个很容易落入的陷阱，它并不能回答*零假设是否真实*的统计问题。P值是在*零假设为真*的前提下计算得到的，是一个条件概率，也就是说，如果我们得到一个很小的P值，那么有两种可能性。
+
+\begin{enumerate}
+\item “更极端”事件确实是一个不寻常发生的事件
+\item 零假设$H_0$可能有问题
+\end{enumerate}
+
+一般来说，如果缺少进一步信息，我们便倾向认为，这个零假设不太可能是真实。但实际上，Fisher认为单独考虑P值是不恰当的，他本人拒绝把P值作为唯一的给出科学推断的准则，他认为：
+
+  >... no scientific worker has a fixed level of significance at which from year to year, and in all circumstances, he rejects hypotheses; he rather gives his mind to each particular case in the light of his evidence and his ideas.--*Statistical Methods and Scientific Inference*
+  
+  >In order to assert that a natural phenomenon is experimentally demonstrable we need, not an isolated record, but a reliable method of procedure, In relation to the experimentally demonstrate when we know how to conduct an experiment that will rarely fail to give us a statistically significant result.--*The Design of Experiments*
+  
+更进一步的，Goodman对Fisher这一观点的评论，他写道：
+
+  >Fisher suggested that it [the P value] be used as part of the fluid, non-quantifiable process of drawing conclusions from observations, a process that included combining the P value in some unspecified way with background infromation
+  
+显然，Fisher认为一次实验结果只是“许多实验结果”中的一种可能，它对应的P值也是也仅仅是许多可能P值中的一种而已。如果我们能确认，我们实施的实验总是能给出一个显著性的结果，结合P值，我们才有足够的理由来确实一个实验现象是否存在，换句话说，一次实验的显著性不能说明问题，多次实验都展现显著性，才能说明问题，即实验的可重复性是更为重要的。
+
+用一个例子来说明Fisher对如何解释P值的看法
+\begin{lemma}
+一个实验者使用双尾$t$检验做基于Fisher的统计推断，在自由度为5时，双尾检测给出的$t=4.09$，此时P值为$P=0.0094$。实验者翻阅以前的文献和实验记录，没有发现与这次实验结果相矛盾的地方，实验的误差也不会导致实验结果倾向零假设
+\end{lemma}
+
+这个例子就满足了Fisher提到的“重复性”，以前的实验和文献都出现了类似结果，并且实验本身也是可靠的，说明出现显著性结果并不是孤立偶然事件，那么我们就有理由相信，这次实验是一个显著性的结果，是对反驳零假设的一个有力的证据。如果这个实验者得出了$P=0.048$的结果呢？这个值显然比$0.0094$大的多，实验者为了确认这一点，需要重新设计实验来进行相同的假设检验，或者结合其他的实验结果来解释这个P值
+
+
+\subsubsection{Neyman-Pearson的假设检验体系}
+
+本笔记中介绍的假设检验体系就是Neyman-Person提出的假设检验体系，Neyman-Person假设检验体系首先*明确要求研究者要提出一组对立的命题*，也就是提出零假设和*对立假设*，然后在此基础上引入了一类错误和二类错误的观念，在研究开始前要以控制一类错误，尽可能减少二类错误为目的来设计设计实验。一般在这个体系下，用一个很小的数值$\alpha$来代表推断时出现一类错误的可能，用$\beta$来表示出现二类错误的可能，用$1-\beta$来表示实验的*功效*。这样，通过限制$\alpha$，控制$\beta$来设计实验方案（$\alpha$）以及调查的样本数量（$\beta$）。
+
+在此基础上，可以给出此次实验的功效函数，通过功效函数进一步给出一个阈值，这个阈值称之为*检验的临界值*，临界值把检验统计量划分成两个区域，*接受域*和*否定域*，如果检验统计量落入*接受域*，则零假设被接受，如果落入*否定域*，则否定零假设，此时把检验统计量落入否定域的情形称之为“显著的”实验结果。
+
+Neyman-Pearson的假设检验体系更像一个全局的控制手段，他们的意思在于，只要以控制一类错误和二类错误的观念来设计实验，那么我们有把握保证，在长期的实验结果上，一类错误的概率能小于$\alpha$，功效能达到$1-\beta$（往往表示成，当效应确实不存在时，有$\alpha$的概率误报效应存在，当效应确实存在时，有$1-\beta$的概率能检测出，因为零假设往往是假设效应不发生或不明显的）。
+
+Neyman-Pearson是这样解释他们的假设检验的意义的，他们这样写道：
+
+  > We are inclined to think that as far as a particular hypothesis is concerned, **no test based upon the theory or probability can by itself provide any valuable evidence of the truth or falsehood of that hypothesis.**
+  
+  >But we look at the purpose of tests trom another view-point, Without hoping to know wheter each separate hypothesis is true or false, we may search for **rules to govern our behaviour with regard to them**, in following which we insure that, **in the long run of experience, we shall not be too often wrong.** 
+  
+可以看到，Neyman和Pearson在第一段话中针锋相对的批判了Fisher的基于P值，也就是他说的“基于概率”的检验方法，他们甚至认为这种基于孤立事件的检验是毫无意义的。在第二段中，他们则提出了自己的观点，他们认为，虽然不能回答某次实验中的假设是否正确，但只要这个实验是按照一定的规则设计的，那么，在对实验结果进行统计推断时，犯错误的概率在长期上来说大大减少。
+  
+同样用一个类似的例子来说明如何用Neyman-Pearson的体系来解释实验结果：
+\begin{lemma}
+一个实验者准备进行一次实验，他翻阅以前的实验数据和文献，认为把实验的$\alpha$设置成$0.05$，$\beta$设置成$0.1$较为合适，依给定的这两个值，他计算出了实验应该要检测的效应大小和样本容量。在实验完成后，他对实验数据进行双侧$t$检验，检验的自由度为5，依据实验前设定的$\alpha$，他计算出$t$值的临界值为$2.57$，而实验给出的$t=4.09$。而双侧事件的拒绝域是$|t| > t_{\alpha=0.05}$
+\end{lemma}
+
+依据Neyman和Pearson的观点，这个实验在全局控制一类错误的条件下进行，如果实验实施无误，一类错误的可能不会大于$0.05$，根据此规定计算出拒绝域和接受域，而实验结果恰好落在拒绝域上，所以我们有理由相信，在长期的实验结果上，零假设应该被拒绝。我们得到了显著的实验结果。如果我们此时计算得到$t=2.46$怎么办，似乎这个值已经很接近临界值了，同样的，依据$|t| > t_{\alpha=0.05}$的规则，我们还是拒绝零假设。还是应该声明实验结果是显著的。那么有没有一种说法，认为$t=4.09$的结果比$t=2.46$更加好，也就是“更加显著”呢？这种说法显然是错误的，如果一个实验确实按照Neyman-Pearson的准则来设计，实际上无论实验是否实施，实验结果组成的集合的性质已经被确定，单次实验的结果只是这个集合中的一个元素，对实验结果进行统计推断是基于这个集合性质而非结果本身。
+
+\subsubsection{两种检验体系的区别}
+
+通过前面的论述，我们可以发现，两种统计推断体系其实建立在完全不同的观点上，有些地方甚至是相互矛盾的，我们可以这么指出他们之间的不同：
+
+\begin{enumerate}
+\item Fisher的P值衡量的是针对\textbf{某次}实验结果在\textbf{零假设成立前提}下，对零假设反驳的证据。Neyman体系是在控制实验一类错误和二类错误前提下，给出一个针对零假设和对立假设的判断，这个判断是建立在长期的实验上的。概括的说，Fisher的统计推断时针对\textbf{“某次”}实验证据强度的判断，而Neyman的方法更像一套体系，在这套体系下，\textbf{“全局”}的推断错误的概率得到控制。
+\item Fisher的检验方法应该是\textbf{灵活的}，单次实验的P值不能说明问题，在做推断时必须考虑实验本身的特点和其他的信息。Neyman-Pearson的检验体系是\textbf{严格的}，实验在设计时已经考虑减少一类错误，控制二类错误，实验结果组成的集合在实验前就已确定，假设的接受和拒绝遵循二分对立的原则，只要接受域和拒绝域被计算出来，就应有一个明确的统计推断
+\end{enumerate}
+
+可以看到，首先在假设问题的提法上，Fisher其实根本没有提出“对立假设”的概念，更没有提出“拒绝零假设”的说法，因为P值是在零假设成立下计算的，用P值去拒绝零假设无异与犯了因果倒置的谬误。而Neyman的体系虽然提到了拒绝零假设的说法，但他也没有说某次实验的结果就能证明零假设是错误的，相反他认为根本不可能通过一次实验来验证一个假设，只能说在控制统计推断错误的前提下，如果实验结果出现了显著性结果，那么可以说“拒绝零假设”这个推断有很大可能是正确的。
+
+然而，我们在很多时候误解了上面的两种体系的区别，一方面在使用$P$值时，我们过于依赖他，武断的认为很小的$P$值等价与显著性而忽略了实验结果可重复性的重要性（所谓的“因为$P<0.05$，所以我们认为实验结果是显著的”），另一方面，在使用Neyman体系时，我们又忘记了接受域和拒绝域的严格性，往往用“A比B更显著”的说法来下结论。这相当于用Neyman-Pearson的严格的二分哲学来解释具有灵活性的$P$值，而在用Neyman的体系时，我们又突然变的灵活起来，试图比较两个都落入拒绝域的结果那个更加好。
+
+实际上，虽然Fisher与Neyman的观点有些地方是冲突的，但却有着共同点，他们都不认为自己的体系能回答“哪个假设正确”的问题，Fisher说P值只是一个反驳零假设的证据，并且还要依据实验的可重复性来下结论，Neyman则坚持在控制统计推断错误的前提下才能有信心说针对某个问题的论断在长期实验下的有效性。两者虽然出发点不同，但都认为**重复性**是解决科学问题的首要关注点。
+
+\subsubsection{了解P值的性质}
+
+我们总是希望观测到一个效应明显的实验结果，$P<0.05$往往被认为是效应明显，即显著性的一个分割点，正是这种观念的广泛传播导致了研究者往往在P值上动一些手脚，最常见的方式就是舍弃一些数据、改变数据的分布、变换数据来人为的产生一些足够小的P值，这样他们就能用P值来声明他们发现了足够显著的效应。这种操纵P值以或得显著性结果的行为称为"P hacking"
+
+由于P值是通过一次实验结果计算而出的，其本身带有随机性质，可以把它当做一个随机变量来看，因此下面通过模拟的方法来研究P值的几个性质，正式这几个性质导致了“P hacking”现象的广泛传播。
+
+
+*1. 只要样本数量足够，总能得到P值显著的结果*
+
+
+在实践中，我们往往过分关注效应的显著性，而对效应本身却缺少关注，有些时候，确实能关注到一些效应是显著的，但如果效应本身很微弱以至于远远小于总体的方差，这种效应完全有可能被个体之间的变异度所掩盖。但在实验样本越大的趋势下，P值展现一个缩小的趋势，只要样本容量达到一定程度，P值就可以达到$P < 0.05$分界点，从而给出一个所谓“显著性”的结果。
+
+\begin{lemma}
+样本抽自$N(0.1, 1)$的总体，零假设为样本来自$N(0,1)$的总体，在样本容量分别为10，100，500，1000的情形下做数值模拟实验：从总体中抽样，进行$t$检验，重复这个过程1000次，最后得出每种样本容量下P值分布的频数直方图。
+\end{lemma}
+```{r p_hack1, eval=T, echo=F, message=F, warning=F, error=F, fig.height=3, fig.width=4}
+set.seed(1234)
+samcap <- c(10, 100, 500, 1000)
+rep <- 1000
+tmean <- 0.1
+tsd <- 1
+nmean <- 0
+
+samp_list <- sapply(samcap, function(x){matrix(rnorm(x*rep, mean=tmean, sd=tsd), 
+                                               ncol=x, byrow=T)})
+p_list <- lapply(samp_list, function(l){apply(l, 1, function(x){t.test(x, mu=nmean, var.equal = T)$p.value})})
+dat <- data.frame(a=p_list[[1]], b=p_list[[2]], c=p_list[[3]], d=p_list[[4]])
+figa <- ggplot(data=dat) + geom_histogram(aes(a), bins=50, colour="blue") + geom_vline(xintercept = 0.05, colour="red")+xlab("Sample capacity=10") + ylab("") 
+figb <- ggplot(data=dat) + geom_histogram(aes(b), bins=50, colour="blue") + xlab("Sample capacity=100") + ylab("") + geom_vline(xintercept = 0.05, colour="red")
+figc <- ggplot(data=dat) + geom_histogram(aes(c), bins=50, colour="blue") + xlab("Sample capacity=500") + ylab("") + geom_vline(xintercept = 0.05, colour="red") 
+figd <- ggplot(data=dat) + geom_histogram(aes(d), bins=50, colour="blue") + geom_vline(xintercept = 0.05, colour="red") + xlab("Sample capacity=1000") + ylab("")
+grid.newpage()
+pushViewport(viewport(layout=grid.layout(2, 2)))
+print(figa, vp=vplayout(1, 1))
+print(figb, vp=vplayout(1, 2))
+print(figc, vp=vplayout(2, 1))
+print(figd, vp=vplayout(2, 2))
+
+sigpercent <- apply(dat, 2, function(x){sum(x < 0.05)/length(x)})
+```
+
+通过直方图来看，在样本容量为10时，P值的分布比较均匀，而当样本容量提高到100时，明显可以看到1000次实验中P值较小的结果明显升高，而当样本容量在1000时，P值分布明显左偏，1000次实验中，较小的P值占据了极大部分。
+
+如果用我们常用的$P < 0.05$的显著性法则来统计这1000次实验哪些显著，哪些不显著，可以得到如下的结果：
+
+|Sample capacity|10|100|500|1000|
+|:------|:------|:------|:------|:------|
+|Rate of significance|`r sigpercent[1]`|`r sigpercent[2]`|`r sigpercent[3]`|`r sigpercent[4]`|
+
+```{r ratecap,  eval=T, echo=F, message=F, warning=F, error=F, fig.height=2, fig.width=4}
+dat <- data.frame(x=samcap, y=sigpercent)
+fig_ratecap <- ggplot(data=dat) + geom_line(aes(samcap, sigpercent), colour="blue") + xlab("Sample capacity") + ylab("Rate of significance")
+fig_ratecap
+```
+
+通过上面的表格和折线图可以看到，随着样本容量的增大，得到显著性结果的可能性是明显增大的，哪怕要论证总体的效应值只有0.1，仅仅只是标准差的十分之1这么微小，只要保证能检测足够多的样本，一样有很大的把握给出显著性结果。
+
+实际实验中，总体的效应值和方差往往是未知的，而我们往往倾向做足够大样本的实验。如果过分关注P值，这时确实很有可能得到一个显著性结果，但实际上，一个十分微小的显著性结果并不能说明科学问题，例如关注两种药物A和B的疗效，在做了大样本实验后，发现A和B之间疗效确有显著性不同，但差距十分微弱，那么这时做出谁哪种药物更优的论断是没有什么意义的。
