@@ -2091,7 +2091,7 @@ Neyman-Pearson是这样解释他们的假设检验的意义的，他们这样写
 由于P值是通过一次实验结果计算而出的，其本身带有随机性质，可以把它当做一个随机变量来看，因此下面通过模拟的方法来研究P值的几个性质，正式这几个性质导致了“P hacking”现象的广泛传播。
 
 
-*1. 只要样本数量足够，总能得到P值显著的结果*
+*1. 只要样本数量足够，总能得到显著的结果*
 
 
 在实践中，我们往往过分关注效应的显著性，而对效应本身却缺少关注，有些时候，确实能关注到一些效应是显著的，但如果效应本身很微弱以至于远远小于总体的方差，这种效应完全有可能被个体之间的变异度所掩盖。但在实验样本越大的趋势下，P值展现一个缩小的趋势，只要样本容量达到一定程度，P值就可以达到$P < 0.05$分界点，从而给出一个所谓“显著性”的结果。
@@ -2142,3 +2142,123 @@ fig_ratecap
 通过上面的表格和折线图可以看到，随着样本容量的增大，得到显著性结果的可能性是明显增大的，哪怕要论证总体的效应值只有0.1，仅仅只是标准差的十分之1这么微小，只要保证能检测足够多的样本，一样有很大的把握给出显著性结果。
 
 实际实验中，总体的效应值和方差往往是未知的，而我们往往倾向做足够大样本的实验。如果过分关注P值，这时确实很有可能得到一个显著性结果，但实际上，一个十分微小的显著性结果并不能说明科学问题，例如关注两种药物A和B的疗效，在做了大样本实验后，发现A和B之间疗效确有显著性不同，但差距十分微弱，那么这时做出谁哪种药物更优的论断是没有什么意义的。
+
+*2. 某次小样本实验中，P值表现往往不稳定*
+
+有些时候，对于一个巨大且个体差异较大的总体，单独的一次抽样实验出现显著性结果并不能给出总体也呈现显著性的推论。正如抽奖一样，有时确实会踩中一部分能得到显著性样本，但如果重复实验次数变多，会发现大多数时候结果是并不显著的，这和Fisher在对P值的悲观性看法是一致的，即P值从来不能回答零假设是否正确的问题。
+
+有个实际已经发生的例子能够表明P值的这种陷阱。Matt Motyl是来自弗吉尼亚大学的一名心理学博士生，他发现了一个有趣的现象：那些有极端政治倾向（极左倾主义或极右倾主义）的人群相较于中立政治倾向的人群更不容易分辨颜色中的灰色。来自2000个人的样本数据支持这个观点，其P值仅仅只有0.01，甚至比0.05还要小。这种结果让他十分开心，因为这么强烈的证据很容易在一些具有高影响力的杂志上发表，但为了稳妥起见，他的导师建议他再重复一次实验，在重做实验后，他却发现，这次样本的P值大到了0.59，这么大的P值甚至连0.05的显著性都没有，这打破了他把发现发表到高影响力杂志的美梦，真是个悲剧的转折。
+
+是Matt Motyl错了么，也不能这么说，他确实发现了这种现象，但为什么却又在重复实验后得到了令人沮丧的结果？可以说，是对P值的错误的理解造成了这种戏剧性的转折。2000个人的样本相对与人群总体不过是一个极小的样本，用一次实验的结果来对总体的特征来下结论，本来就是一个不严谨的科学推论。
+
+同样的，我们用一个数值模拟实验来重现Matt遇到的情况，来看看在一个本身个体间差异巨大的总体下，单次小样本实验的P值会呈现一个怎样的特征。
+
+\begin{lemma}
+从总体分布为$N(1, 3)$的总体抽10个样本，零假设为：总体均值为0，重复进行这个实验，记下每次$t$检验时的P值
+\end{lemma}
+
+```{r p_var, eval=T, echo=F, message=F, warning=F, error=F, fig.height=3, fig.width=4}
+set.seed(123)
+n <- 1000
+cap <- 10
+
+p_varli <- sapply(rep(cap, n), function(x){
+  t.test(rnorm(x, mean=1, sd=3), mu=0)$p.value
+})
+
+dat <- data.frame(x=c(1:n), p = p_varli)
+fig_pline <- ggplot(data=dat[1:50, ]) + geom_line(aes(x=x, y=p), colour="blue") + geom_hline(yintercept = 0.05, colour="red") + xlab("Experiments") + ylab("P.value")
+fig_phist <- ggplot(data=dat) + geom_histogram(aes(p), colour="blue") + geom_vline(xintercept = 0.05, colour="red") + xlab("P.value") + ylab("Counts")
+
+grid.newpage()
+pushViewport(viewport(layout=grid.layout(1, 2)))
+print(fig_pline, vp=vplayout(1, 1))
+print(fig_phist, vp=vplayout(1, 2))
+```
+
+|Inference|Significance|Non-significance|
+|:------|:------|:------|
+|Counts|`r sum(p_varli < 0.05)`|`r sum(p_varli >= 0.05)`|
+|Frequency|`r sum(p_varli < 0.05)/length(p_varli)`|`r sum(p_varli >= 0.05)/length(p_varli)`|
+
+在零假设为假的情况下，进行了1000次模拟实验，通过上面的图像可以看出，P值其实在$[0, 1]$范围内波动很大，而右图的频数直方图显示虽然P值的分布是左偏的，但得到显著性结果：即总体均值不是0的频数很低。下面的表格进一步表明，在1000次实验中，只有157次实验得到了显著性结果，其他843次结果均不显著
+
+所以，单次实验并不能说明问题，尤其在研究的总体方差比均值大的情况下，由于均值的差异常常被方差掩盖，得到非显著结果的可能是大大增大的，通过多次的重复可以更好的下结论。
+
+*3. P-curve: P值的分布曲线*
+
+P-curve，是近年来提出的一种用于检查文献是否经过P-hacking的方法，它是一条描述P值分布的曲线，在零假设为真时，P-curve应当显示为一条水平直线，即为均匀分布，当零假设为假时，P-curve出现明显的左偏，即从P值从0到1的方向看，概率密度呈现从高到低的态势。
+
+通过meta分析收集大量P值，做出P-curve，然后与理论上的P-curve进行比较能够看出总体上是否出现了P-hacking，本文不表述如何做这个检测，只是用数值模拟来展现两种类型的P-curv的形状。
+
+\begin{lemma}
+从分布为$N(1, 1)$的总体中抽出一份容量为10的样本，对下面两个零假设进行$t$检验：
+\begin{enumerate}
+\item 零假设为真：样本来自分布为$N(1, 1)$的总体
+\item 零假设为假：样本来自分布为$N(0, 1)$的总体
+\end{enumerate}
+重复做这个实验1000次，然后做出两种情况下的P值分布的概率密度曲线
+\end{lemma}
+
+```{r p_curve, eval=T, echo=F, message=F, warning=F, error=F, fig.height=3, fig.width=4}
+cap <- 10
+n <- 10000
+
+p_curvent <- sapply(rep(cap, n), function(x){t.test(rnorm(x, mean=1, sd=1), mu = 1, var.equal = T)$p.value})
+p_curvenf <- sapply(rep(cap, n), function(x){t.test(rnorm(x, mean=1, sd=1), mu = 0, var.equal = T)$p.value})
+dat <- data.frame(nt = p_curvent, nf = p_curvenf)
+
+fig_nt <- ggplot(dat) + geom_density(aes(nt), bw=0.03, colour="blue", size=1) + xlab("True NULL:P-value") + geom_vline(xintercept = 0.05, colour="red")
+fig_nf <- ggplot(dat) + geom_density(aes(nf), bw=0.05, colour="blue", size=1) + ylab("") + xlab("False NULL:P-value") + geom_vline(xintercept = 0.05, colour="red")
+
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(1, 2)))
+print(fig_nt, vp=vplayout(1, 1))
+print(fig_nf, vp=vplayout(1, 2))
+```
+
+上面左图显示了零假设为真时的P-curve，可以看到在各个P值上的概率密度都大致相等，由于数值模拟的随机性存在一些波动，可以认为当零假设为真时的P值分布为均匀分布，各种P值出现的可能性是均等的。右图显示了零假设为假时的P-curve，这条曲线在P值小的区域有很大的概率密度，说明越小的P值越有可能出现。
+
+如果对一份出现了P-hacking现象的杂志进行统计，P-curve极有可能在$P = 0.05$附近有异常的波动，出现递增的现象，这表明有论文在数据分析中刻意提高了$P <0.05$出现的概率。
+
+```{r p_curvehack, eval=T, echo=F, message=F, warning=F, error=F, fig.height=3, fig.width=4}
+x_normal <- seq(0, 0.06, 0.001)
+y_normal <- 1 / (x_normal*10)
+y_hack <- c(y_normal[x_normal<=0.01], (1/y_normal[x_normal>0.01])*90)
+
+dat <- data.frame(x = x_normal, y_normal = y_normal, y_hack=y_hack)
+fig_hack <- ggplot(data=dat) + geom_line(aes(x=x, y=y_hack), colour="red", size=1) + geom_line(aes(x=x, y=y_normal), colour="blue", size=1) + xlab("P.value") + ylab("Frequency")
+fig_hack
+```
+
+上图就显示了P-hacking发生时P-curve曲线的情况，红色区域出现递增，明显与蓝色理论曲线递减趋势不同，这时就表明在0.05附近发生了P-hacking现象。
+
+\subsubsection{总结}
+
+本文将对P值的认识总结成如下几条，如下：
+\begin{enumerate}
+\item P值可以用来描述数据与一个特定统计模型（通常是零假设）不相容程度，通常越小的P值说明数据与统计模型不相容程度越高
+\item P值不是特定统计模型为真的度量，它本身是对数据与特定模型相容性的度量而非这个统计模型本身
+\item 在P值上应用简单的$P<0.05$即显著是错误的，更不能说在这个条件下，特定的统计模型就为假。在对\textbf{假设做统计推断时，需要综合考虑其他因素}
+\item P值不能用来描述效应的大小或实验结果的重要性，正如前面的模拟，无论效应多么微小，在保证实验精度和样本容量足够大时，总能给出很小的P值，相反，对于那些实际存在的明显的效应，糟糕的实验精度和小的样本容量同样也能给出一个很大的P值
+\item 不应该对P值进行人为选择或操纵，P-hacking应该杜绝
+\item 统计推断不应该局限于考虑P值，更多的因素应该被考虑，诸如重复性原则，实验的设计，历史数据等。
+\end{enumerate}
+
+除了P值，还有许多可以帮助我们做出统计推断的方法，诸如计算置信区间，可信度或预测区间以及贝叶斯方法。特别是使用贝叶斯方法，能够更好的回答在产生这样的数据的前提下，某个特定的模型是否可靠的问题。即考虑如下问题$\textrm{P}(H|data)$。
+
+\subsubsection{参考文献}
+
+本文的观点和论据来自如下几篇著作和文献：
+
+1. Fisher, R. A. (1954). Statistical methods for research workers, 5th ed. , 21(82), 340-341.
+
+2. Fisher, R. A. (1936). The design of experiments. Social Service Review, 57(1), 183–189.
+
+3. Lew, M. J. (2012). Bad statistical practice in pharmacology (and other basic biomedical disciplines): you probably don't know p. British Journal of Pharmacology, 166(5), 1559-1567.
+
+4. Wasserstein, R. L., & Lazar, N. A. (2016). The asa''s statement on p-values: context, process, and purpose. American Statistician, 70(2), 129-133.
+
+5. Nuzzo, R. (2014). Scientific method: statistical errors. Nature, 506(7487), 150-2.
+
+6. Head, M. L., Holman, L., Lanfear, R., Kahn, A. T., & Jennions, M. D. (2015). The extent and consequences of p-hacking in science. Plos Biology, 13(3), e1002106.
