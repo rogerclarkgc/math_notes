@@ -1,0 +1,148 @@
+---
+title: "统计学习读书笔记"
+author:
+  - Rogerclark
+documentclass: ctexart
+output:
+  rticles::ctex:
+    fig_caption: yes
+    number_sections: yes
+    toc: yes
+    toc_depth: 3
+classoption: "hyperref,"
+---
+
+\newtheorem{Definition}{\hspace{2em}定义}
+\newtheorem{theorem}{\hspace{2em}定理}
+\newtheorem{lemma}{\hspace{2em}例子}
+\newtheorem{Proof}{证明}
+
+# 预备知识
+
+## 范数简介
+
+用实用的方式简单介绍范数，不涉及定义的详细探讨，范数可以认为是对距离概念的一种延拓，统计学习中使用范数，常常是用来度量一个向量在一个超维空间中的大小（类似于长度的概念）
+
+### L-P 范数
+
+L-P范数有着如下的定义：
+\begin{equation}
+L_p = \Vert \textbf{x} \Vert_p = \sqrt[p]{\sum_{i=1}^n x_i^p}, \quad \textbf{x}=(x_1, x_2, \cdots, x_n) 
+\end{equation}
+
+当$p=1$或$p=2$，此时称为$L_1$范数或者$L_2$范数，这是在统计学习中很常用的范数，它们的定义分别如下：
+
+\begin{equation}
+\begin{split}
+L_1 &= \Vert \textbf{x} \Vert_1 = \sum_{i=1}^n |x_i|\\
+L_2 &= \Vert \textbf{x} \Vert_2 = \sqrt{\sum_{i=1}^n x_i^2}
+\end{split}
+\end{equation}
+
+其中$L_1$范数是$\textbf{x}$向量中元素的绝对值之和，常用的距离描述Manhattan距离就是一种$L_1$范数，$L_2$范数是最常用的范数之一，欧氏距离就是一种$L_2$范数
+
+# 感知机
+
+感知机是二分类的线性模型，学习感知机模型的目的在于找到一个超平面，尽可能的将训练数据分成两类。
+
+## 感知机模型
+
+\begin{Definition}
+（感知机）输入空间（特征空间）满足$\mathcal{X}\subseteq \mathbb{R}^n$，输出空间为$\mathcal{Y}=\{+1, -1\}$，输入$x\in\mathcal{X}$表示一个实例的特征向量，对于输入空间的点；输出$y\in\mathcal{Y}$表示实例的类别，由输入空间到输出空间的如下函数：
+\begin{equation}
+f(x) = \textmd{sign}(w\cdot x + b)
+\end{equation}
+称为感知机，其中，$w$和$b$是感知机模型的参数，$w \in\mathbb{R}^n$叫权重向量，$b \in \mathbb{R}$叫偏置（bias），$w\cdot x$是两个向量的内积。sign是符号函数，它的定义是：
+\begin{equation}
+\textmd{sign}(x)=\left\{
+\begin{aligned}
+&+1, \quad x \geq 0\\
+&-1, \quad x < 0
+\end{aligned}
+\right.
+\end{equation}
+\end{Definition}
+
+感知机模型是一个线性的分类器，当$w\cdot x + b=0$时，对应了特征空间$\mathbb{R}^n$中的一个超平面$S$，这个超平面将特征空间分成了正负两类。因此超平面$S$称为分离超平面。
+
+## 感知机学习策略
+
+根据感知机的定义，可以给出损失函数的定义，一个直观的选择是用误分类点的总数来表示，但这样定义的函数非连续可导，不便于求解。另一个选择则是用*误分类点到超平面的总距离*来定义。首先，给出输入空间$\mathbb{R}^n$中任一点$x_0$到超平面$S$的距离：
+
+\begin{equation}
+\frac{1}{\Vert w \Vert} |w\cdot x_0 + b|
+\end{equation}
+
+对误分类点$x_i$，到超平面的距离写为：
+
+\begin{equation}
+\label{distance_mislabel}
+-\frac{1}{\Vert w \Vert}y_i (w \cdot x_i + b)
+\end{equation}
+
+对于所有误分类点集合$M$，那么可以写出所有误分类点到超平面$S$的总距离：
+\begin{equation}
+\label{distance_mislabel_total}
+-\frac{1}{\Vert w \Vert} \sum_{x_i \in M} y_i (w \cdot x_i + b)
+\end{equation}
+
+根据上式\eqref{distance_mislabel_total}的定义，感知机的损失函数可以定义为：
+\begin{Definition}
+\label{perceptron_loss_def}
+对给定数据集
+\begin{displaymath}
+T = {(x_1, y_1), (x_2, y_2), \cdots, (x_N, y_N)}
+\end{displaymath}
+其中，$x_i \in \mathcal{X} = \mathbb{R}^n$，$y_in \in \mathcal{Y}=\{+1, -1\}$，$i=1, 2, \cdots, N$，感知机$\textmd{sign}(w\cdot x +b)$学习的损失函数为：
+\begin{equation}
+\label{perceptron_loss_function}
+L(w, b) = - \sum_{x_i \in M} y_i (w \cdot x_i + b)
+\end{equation}
+\end{Definition}
+
+这个函数连续可导，方便后续的学习算法进行优化。
+
+## 感知机学习算法
+
+对感知机学习的过程就是确定感知机模型$w$和$b$，使得损失函数$L(w, b)$尽量小的过程，这个问题可以转化成在训练数据集中，求解$L(w, b)$极小值点的最优化问题。常见的方法是*随机梯度下降法*
+
+### 原始形式
+
+输入：训练集$T=\{(x_1, y_1), (x_2, y_2), \cdots, (x_N, y_N)\}$，其中$x_i \in \mathcal{X} = \mathbb{R}^n$，$y_i \in \mathcal{Y}=\{-1, +1\}$，$i=1,2, \cdots, N$；学习率$\eta(0<\eta \leq1)$；
+输出：$w$, $b$；感知机$f(x)=\text{sign}(w\cdot x + b)$。
+\begin{enumerate}
+\item 选取初值$w_0$, $b_0$
+\item 选取训练集中一对$(x_i, y_i)$
+\item 如果误分类，即有$y_i(w\cdot x_i + b) \leq 0$，则让参数分别加一单位学习速率下的梯度
+\begin{displaymath}
+\begin{split}
+&w \leftarrow w + \eta y_i x_i \\
+&b \leftarrow b + \eta y_i
+\end{split}
+\end{displaymath}
+\item 回到第2步，只到所有训练数据被正确分类
+\end{enumerate}
+
+### 对偶形式
+
+感知机的对偶形式是原始形式的另一种记法，它将$w$和$b$用$x_i$和$y_i$的线性组合来表示，这时感知机模型变成：
+
+\begin{equation}
+\label{perceptron_def_an}
+f(x) = sign(\sum_{j=1}^N \alpha_j y_j x + b)
+\end{equation}
+
+相应的算法中的误分条件也变成，如果$y_i (\sum_{j=1}^N \alpha_j y_j x_j \cdot x_i +b) \leq 0$，则对$\alpha_i$和$b_i$进行更新:
+\begin{displaymath}
+\begin{split}
+&\alpha_i \leftarrow \alpha_i + \eta\\
+&b \leftarrow b + \eta y_i
+\end{split}
+\end{displaymath}
+
+对偶形式的好处在于，式中$x_j\cdot x_i$的形式能预先运算并存在一个矩阵里，这个矩阵就是所谓Gram矩阵:$G=[x_i \ \cdot x_j]_{M\times N}$，以后每次对样本点进行误分条件判断时，只要按照顺序查找这个矩阵中的数字。
+
+## 补充资料
+
+空间中任一点到超平面$S$的距离推导过程，见网页
+[链接](https://blog.csdn.net/yutao03081/article/details/76652943)
