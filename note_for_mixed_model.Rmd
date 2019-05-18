@@ -1,0 +1,293 @@
+---
+title: "在R中使用混合模型"
+author:
+  - RogerClark
+  
+documentclass: ctexart
+output:
+  rticles::ctex:
+    fig_caption: yes
+    number_sections: yes
+    toc: yes
+classoption: "hyperref,"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval=TRUE, echo=FALSE, error=TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r load_env}
+library(ggplot2)
+library(car)
+```
+
+```{r load_workspace}
+load("E:/R/r_books/.RData")
+```
+
+\newtheorem{Definition}{\hspace{2em}定义}
+\newtheorem{theorem}{\hspace{2em}定理}
+\newtheorem{lemma}{\hspace{2em}例子}
+\newtheorem{Proof}{证明}
+
+# 随机效应模型
+
+## 单因素ANOVA：模型介绍
+
+以一个单因素的实验为例子，实验中有同一厂家的i个机器，测定这些机器平稳运行所需要的时间，可以知道，这些机器来自同一厂家，它们达到平稳运行所需要的时间应该都有一个平均的数值$\mu$，但由于每个机器状态不同，所以他们的平稳时间在这平均数值$\mu$上或增或减一定时间，将每个机器平均增减时间记为$\alpha_i$，于是，我们得到一个最基本的包含一个固定的截距项和一个随机效应项的随机效应模型：
+\begin{equation}
+\label{basic_mixed}
+Y_{ij} = \mu + \alpha_i + \epsilon_{ij}
+\end{equation}
+
+这里，把$\alpha_i$作为随机效应项， 假设$\alpha_i \ \text{i.i.d.}\sim N(0, \sigma^2_{\alpha})$。误差项$\epsilon_{ij} \ \text{i.i.d}\sim N(0,\sigma^2)$。$\mu$作为截距项，即上文中的总体的均值，是一个不变的常数。
+
+模型\eqref{basic_mixed}的基本参数如下：
+\begin{displaymath}
+\begin{split}
+&E[Y_{ij}] = \mu \\
+&Var(Y_{ij}) = \sigma^2_{\alpha} + \sigma^2
+\end{split}
+\end{displaymath}
+
+特别地，
+\begin{displaymath}
+Cor(Y_{ij}, Y_{kl}) = \left\{
+\begin{split}
+ 0& \quad i\neq k \\
+ \sigma^2_{\alpha} / (\sigma^2_{\alpha} & + \sigma^2) \quad i=k, j\neq l \\
+ 1& \quad i=k, j=l
+\end{split}
+\right.
+\end{displaymath}
+
+对于来自不同机器的观测，他们是独立的，而同一机器的不同观测存在相关性，它们由$\sigma^2_{\alpha}/(\sigma^2_{\alpha} + \sigma^2)$来描述。这也称之为组内相关性。
+
+## 单因素ANOVA：例子
+
+这里使用一个研究出生牛体重的例子，实验选取5只雄牛分别与母牛配对，每对生下8只小牛，记录小牛的出生体重。所以一共有5组数据，每组的8个观测，现在想研究这5个配对的区别，故进行单因素的ANOVA分析。
+
+```{r sire_data, echo=TRUE}
+## Create data set ####
+weight <- c(61, 100,  56, 113,  99, 103,  75,  62,  ## sire 1
+            75, 102,  95, 103,  98, 115,  98,  94,  ## sire 2
+            58,  60,  60,  57,  57,  59,  54, 100,  ## sire 3
+            57,  56,  67,  59,  58, 121, 101, 101,  ## sire 4
+            59,  46, 120, 115, 115,  93, 105,  75)  ## sire 5
+sire    <- factor(rep(1:5, each = 8))
+animals <- data.frame(weight, sire)
+head(animals, 3)
+summary(animals)
+```
+
+```{r sire_plot}
+fig_sire <- ggplot(data=animals, aes(x=sire, y=weight, color=sire)) +geom_point()
+fig_sire
+```
+
+通过上图，我们发现5个分组下的观测都有较大的范围变动，组与组间的差异也不甚明确。为了研究这种不太明确的关系，我们使用`lme4`来建立我们的模型
+
+```{r sire_model, echo=TRUE}
+library(lme4)
+fit.sire <- lmer(weight ~ (1|sire), data=animals)
+```
+
+这里使用`lme4`的记号语法来描述我们在\eqref{basic_mixed}中定义的混合模型，波浪线左端即响应变量， 右端`(1|sire)`表示这是一个随机效应项，表示我们的截距项存在与`sire`分组有关的随机效应。代表模型中的$\mu + \alpha_i$项。
+
+```{r sire_summary, echo=TRUE}
+summary(fit.sire)
+```
+
+从上面的模型总结，我们可以看到，模型对随机效应的估计分成两项，其中`sire`项代表了模型中$\sigma_{\alpha}^2$的估计，这里$\hat{\sigma^2_{\alpha}}=116.7$。而`Residual`代表了对模型中$\epsilon_{ij}$的方差的估计，这里$\hat{\sigma^2}=463.8$。注意`Std.Dev`列并不是对方差的误差估计，只是`Variance`列的开方，即标准差。我们可以看到，`sire`的组间差异相比残差项要小，`sire`项只解释了总体的$116.7/(116.7 + 463.8)=20\%$的方差。
+
+第二部分即对截距中固定效应部分$\mu$的估计，这里估计值为$\hat{\mu}=82.550$，说明40个观测的均值应该是82.550
+
+我们使用`confint`来计算模型中参数的置信区间
+
+```{r fit.sire.confint, echo=TRUE}
+confint(fit.sire, oldNames=FALSE)
+```
+
+另外，对每个$\alpha_i$的估计，可以由`ranef`函数给出：
+```{r estimate_alpha, echo=TRUE}
+ranef(fit.sire)
+```
+
+## 多因素的情形
+
+这里用一个测试血液分析仪性能的实验数据来说明。有一实验室准备近期新进4太分析仪，准备先测试仪器稳定性。实验分四天进行，每天实验中，一共有八份血清随即分成四组，每组两份给每台机器测试。这样在四天的实验中（因素1），一共有四台不同机器参与测试（因素2）。每个机器每天测试两份血清（完全组合的重复）。响应变量时机器测量的甘油三酯浓度值。
+
+```{r trigly_data,echo=TRUE}
+## Create data-set ####
+##     machine 1     machine 2     machine 3     machine 4
+y <- c(142.3, 144.0, 148.6, 146.9, 142.9, 147.4, 133.8, 133.2, 
+       134.9, 146.3, 145.2, 146.3, 125.9, 127.6, 108.9, 107.5, 
+       148.6, 156.5, 148.6, 153.1, 135.5, 138.9, 132.1, 149.7, 
+       152.0, 151.4, 149.7, 152.0, 142.9, 142.3, 141.7, 141.2)
+
+trigly <- data.frame(y=y, day=factor(rep(1:4, each=8)),
+                     machine=factor(rep(rep(1:4, each=2), 2)))
+head(trigly,5)
+summary(trigly)
+```
+
+首先，来看各个因子组合的情况，可以看到，这是一个双因素完全组合的重复测量实验，两个层次共16个组合，每个组合进行了两次重复测量
+
+```{r trigly_table, echo=TRUE}
+with(trigly, table(day, machine))
+```
+
+在建立模型前，有必要先考虑因素间的交互作用，利用交互作用图来检查因素之间的交互效应。
+
+```{r interaction_trigl, echo=TRUE}
+fig_trigly_inter <- ggplot(data=trigly, 
+                           aes(x=day, 
+                               y=y, 
+                               group=machine, 
+                               color=machine))
+fig_trigly_inter <- fig_trigly_inter + geom_point()
+fig_trigly_inter <- fig_trigly_inter+stat_summary(fun.y=mean,
+                                                  geom="line")
+fig_trigly_inter
+```
+
+可以看到，因子`machine`和因子`day`存在交互作用，因为他们均值曲线存在相交的情况。因此，模型设计成如下的形式：
+
+\begin{equation}
+\label{twofactor_random}
+Y_{ijk} = \mu + \alpha_i + \beta_j + (\alpha \beta)_{ij} + \epsilon_{ijk}
+\end{equation}
+
+以上参数满足如下假设：
+\begin{displaymath}
+\begin{split}
+\alpha_{i} \ \text{i.i.d.} & \sim N(0, \sigma^2)\\
+\beta_{j} \ \text{i.i.d.} & \sim N(0, \sigma^2_{\beta})\\
+(\alpha \beta)_{ij} \ \text{i.i.d.} & \sim N(0, \sigma^2_{\alpha \beta})
+\end{split}
+\end{displaymath}
+
+根据模型，我们写出`lme4`中的随机效应模型的式子
+```{r random_machine, echo=TRUE}
+fit.trigly <- lmer(y ~ (1|day) + (1|machine) + (1|machine:day),
+                   data=trigly)
+summary(fit.trigly)
+```
+
+这里对随机效应$\alpha_i$和$\beta_j$的表示与单因素模型中一样，但对于交互效应，这里写成`(1|machine:day)`
+
+从随机效应部分的结果可以看到，`day`因子的方差估计为$\hat{\sigma^2_{\alpha}}=44.7$，`machine`为$\hat{\sigma^2_{\beta}}=57.7$，最后是两者的交互效应，$\hat{\sigma}^2_{\alpha \beta}=34.7$，可以看到机器间的随机效应构成了总体方差的大部分。
+
+## 因素的嵌套 (Nesting)
+
+对于同样是双因素的情况，考虑一个不同于上一节血液分析仪的例子。为了测试胶水的性质，随机抽取了10批产品，每批产品都有三桶，现在对每桶重复做两次测量，这样一共得到了60个观测数据。
+
+```{r echo=TRUE}
+data("Pastes", package = "lme4")
+head(Pastes, 5)
+with(Pastes, table(batch, cask))
+```
+
+注意与上一节`trigly`数据集比较，同样是两个因子，但他们关系不同，在`trigly`中，机器1在第一天的数据和机器2在第一天的数据，这里的“第一天”意义相同（实验的天数也是因子）。而在`Pastes`数据集中，第一批货物中的第一桶和第二批货物中的第一桶则是完全不同的“第一”，他们只是编号相同，但确实是完全没有关系的。这里把这种关系成为“嵌套”，我们说因子`cask`嵌套在`batch`中。
+
+首先可视化数据，基于`batch`对散点图进行分片处理来展现嵌套关系。
+
+```{r point_Pastes, echo=TRUE}
+fig_pastes <- ggplot(Pastes, aes(y=cask,
+                                 x=strength))
+fig_pastes <- fig_pastes + geom_point()
+fig_pastes <- fig_pastes + facet_grid(batch ~ .)
+fig_pastes
+```
+
+这样，定义一个新的方差模型来描述嵌套：
+\begin{equation}
+\label{nested_model}
+Y_{ijk} = \mu + \alpha_i + \beta_{j(i)} + \epsilon_{k(ij)}
+\end{equation}
+
+在模型\eqref{nested_model}中，$\alpha_i$表示`batch`的随机效应，$\beta_{j(i)}$表示嵌套在`batch`中的`cask`的随机效应，同样的误差项也是嵌套的。对于两个随机效应项，其假设与上一节中的假设相同。
+
+我们根据`lme4`的语法规则，写出嵌套情况下的方差模型
+
+```{r pastes_model, echo=TRUE}
+fit.paste <- lmer(strength ~ (1|batch/cask), data=Pastes)
+summary(fit.paste)
+```
+
+这里我们引入了一个新的记号`(1|batch/cask)`来表示`cask`嵌套在`batch`中，值得注意的是，这个写法等价于`(1|batch) + (1|cask:batch)`，同时也等价于`(1|batch) + (1|sample)`，观察原表格，可以看到`sample`列实际就是`batch`因子和`cask`因子的组合，他们作为因子，一共有30个（层次）。我们不能写成`(1|batch) + (1|cask)`的形式，因为`cask`列是记成a, b, c的三层次因子，直接这么写会让算法认为`cask`是单独作为一个层次，那么同属相同记号的`cask`就会共享一样的效应，并非我们所设定的嵌套。
+
+观察结果，我们发现`batch`，也就是批次的方差比`cask:batch`即同一批次内不同桶的方差要小。这提示我们批次与批次之间的差异可能较小，但同意批次内不同桶胶水之间的品质差异可能较大。
+
+# 混合效应模型
+
+现在来讨论混合效应模型，为了方便解释概念，这里采用`nlme`包中的`Machines`数据集来做例子。
+
+```{r echo=TRUE}
+data("Machines", package = "nlme")
+Machines[, "Worker"] <- factor(Machines[, "Worker"], 
+                               levels = 1:6, 
+                               ordered = FALSE)
+head(Machines, 5)
+with(Machines, table(Machine, Worker))
+```
+
+这个数据集是一个测试三种品牌机器性能的实验，在这个实验中，一共选择了6名工人，每个工人都操纵三个品牌机器3次，记下工人的产出，转化成一个具体分数。最后得到到$3\times6\times3=54$个衡量机器性能的分数数据。
+
+同样的，先尝试可是化数据，来看看这些因子之间的关系。
+
+```{r echo=TRUE}
+fig_machines <- ggplot(Machines, 
+                       aes(x = Machine, 
+                           y = score, 
+                           group = Worker, 
+                           col = Worker))
+fig_machines <- fig_machines + geom_point() 
+fig_machines <- fig_machines + stat_summary(fun.y = mean, 
+                                            geom = "line")
+fig_machines
+```
+
+从交互效应图我们能看出很多有用的信息，首先，机器之间的产量有明显差别，总体呈现$C>B>A$的趋势，从六个工人角度看，在同一机器上操作时，工人之间水平差别比较大，且没有明显的趋势。特别的，工人6在机器B上的分数十分低，这与其他工人差别很大。最后，交互曲线存在交叉趋势，说明工人因子和机器因子之间存在交互效应。
+
+有了这些信息，我们可以推测出一个新的方差模型，这个模型即能描述机器之间存在“内在”的产量差距，也能解释工人之间的“随机”的变化。
+
+\begin{equation}
+\label{machine_mixed}
+Y_{ijk} = \mu + \alpha_i + \beta_j + (\alpha \beta)_{ij} + \epsilon_{ijk}
+\end{equation}
+
+在这个模型中，$\alpha_i$是机器i存在的固定效应，$\beta_j$是工人j存在的随机效应，$(\alpha \beta)_{ij}$是两者之间的交互效应。可以这么理解这些参数，$\alpha_i$是描述机器性能的参数，机器的性能应该在很长一段时间都是一个固定的数值，不同机器之间这个数值不同。$\beta_j$是工人的操作水平，这个操作水平在工人这一总体中是一个随机变量。$(\alpha \beta)_{ij}$是工人对某个机器的“偏好”程度，这也是一个随机变量。
+
+对于模型假设，同样都要求这些参数满足独立同分布的正态分布。
+
+现在根据模型\eqref{machine_mixed}，写出符合`lme4`的模型表达式
+
+```{r machine_fit, echo=TRUE}
+fit.mp <- lmer(score ~ Machine + (1|Worker) + (1|Worker:Machine),
+               data=Machines)
+summary(fit.mp)
+```
+
+一般的，我们希望像一个一般线性模型一样能给出固定效应的p值，但`lme4`包没提供这个功能。我们可以使用`lmerTest`包，这个包的`lmer`函数使用方法不变，但多了一个对固定效应的检验
+
+```{r machine_fit_2, echo=TRUE}
+library(lmerTest)
+fit.mp2 <- lmer(score ~ Machine + (1|Worker) + (1|Worker:Machine),
+               data=Machines)
+summary(fit.mp2)
+```
+
+我们可以看到，固定效应的估计量和统计检验都被计算，我们发现机器B比机器A（截距Intercept）大7.967，机器C比机器A大13.917，这与我们从交互效应图得到的直观结论一致。注意，这里的固定效应的估计值都是默认按照字母顺序比较，字母顺序排第一位的会作为对照组，其后的依次与之比较。在这个例子中，A排第一个，所以A是对照组，其他机器B和机器C都与A做比较。
+
+我们可以用`fixef`和`confint`来输出固定效应的估计量和置信区间：
+```{r machie_fixed, echo=TRUE}
+fixef(fit.mp2)
+confint(fit.mp2, oldNames=FALSE)
+```
+
+最后，我们还希望知道固定效应的方差有多少，很简单，直接使`anova`可以计算
+```{r machine_aov, echo=TRUE}
+anova(fit.mp2)
+```
+
