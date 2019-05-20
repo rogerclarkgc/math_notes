@@ -291,3 +291,32 @@ confint(fit.mp2, oldNames=FALSE)
 anova(fit.mp2)
 ```
 
+# 附录：`lme4`中方差模型的记号语言
+
+## 公式意义表
+
+ 公式 | 意义 |
+-|-|
+ `(1|group)` | 截距项由随机效应group解释 |
+ `(x|group)`=`(1+x|group)` | 相关的斜率项和截距项由随机效应group解释 |
+ `(0+x|group)`=`(-1+x|group)` | 只有斜率项由随机效应解释，截距固定效应 |
+ `(1|group)+(0+x|group)` | 非相关的斜率项和截距项由随机效应group解释 |
+ `(1|site/block)`=`(1|site)+(1|site:block)` | 截距项由随机效应site和嵌套在site的block解释 |
+ `site+(1|site:block)` | 固定效应site随机项截距由site和block的交互效应 |
+ `(x|site/block)=(x|site)+(x|site:block)` | 随机效应斜率和截距由site和site与block交互效应解释 |
+ `(x1|site)+(x2|site)` | x1，x2分别由site和block解释
+ `x*site + (x|site:block)` | 随机效应：site和block交互解释的x和截距 |
+ `(1|group1)+(1|group2)` | 随机截距项由两个相交的分组因子解释
+ 
+ * N/A(固定效应模型): $\beta_0 + \beta_1 X_i + e_si$
+ * `~X+(1|Subject)`: $(\beta_0 + b_{S,0s})+\beta_1X_i+e_{si}$
+ * `~X+(1+X|Subject)`: $(\beta_0+b_{S,0s})+(\beta_1+b_{S,1s})X_i+e_{si}$
+ * `~X+(1+X|Subject) + (1|Item)`: $(\beta_0 + b_{S,0s} + b_{I,0i})+(\beta_1+b_{S,1s})X_i$
+ * `~X+(1|Subject)+(0+X|Subject)+(1|Item)`: 同上，但Subject和item独立
+ * `~X+(1|Subject) + (1|Item)`:  $(\beta_0 + b_{S,0s} + b_{I,0i}) + \beta_1 X_i + e_{si}$
+ * `~X+(0+X|Subject)+(1|Item)`: $(\beta_0+b_{I,0i}) + (\beta_1+b_{S,1s})X_i +e_{si}$
+ 
+
+
+ 
+ 
