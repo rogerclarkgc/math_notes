@@ -1,0 +1,219 @@
+---
+title: "在R中使用广义线性模型（GLM）"
+author:
+  - RogerClark
+documentclass: ctexart
+output:
+  rticles::ctex:
+    fig_caption: yes
+    number_sections: yes
+    toc: yes
+classoption: "hyperref,"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval=TRUE, echo=FALSE, error=TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r load_env}
+library(ggplot2)
+library(car)
+library(reshape)
+```
+
+```{r load_workspace}
+load("E:/R/r_books/.RData")
+```
+
+\newtheorem{Definition}{\hspace{2em}定义}
+\newtheorem{theorem}{\hspace{2em}定理}
+\newtheorem{lemma}{\hspace{2em}例子}
+\newtheorem{Proof}{证明}
+
+# 广义线性模型
+
+对于线性模型，可以认为线性模型是这样一个分布：
+
+\begin{equation}
+y|x \sim N(x^{'} \beta, \sigma^2)
+\end{equation}
+
+即随机变量$y$是基于$x$的正态分布，它的均值是与$x$有关的线性函数，方差是一个与$x$无关的常量。
+
+而在广义线性模型中，对$y$的分布以及分布内参数的形状不再严格限制。比如
+
+\begin{displaymath}
+\begin{split}
+y|x &\sim N(\mu(x), \sigma^2(x)) \quad \text{正态分布}\\
+y|x &\sim Pois(\lambda(x)) \quad \text{泊松分布}\\
+y|x &\sim Exp(\lambda(x)) \quad \text{指数分布}\\
+\end{split}
+\end{displaymath}
+
+总的来说，广义线性模型的一般分布形式如下：
+\begin{equation}
+\label{basic_glm}
+y|x \sim F(\theta(x))
+\end{equation}
+
+其中$F(\theta)$是分布的形状，$\theta(x)$是参数的形状。广义线性模型对$F(\theta)$和$\theta(x)$有一定要求。对于$F$，要求它属于自然指数族分布，包括正态分布、伽马分布、二项式分布、泊松分布和负二项式分布。另外还有5种特殊形式：卡方分布(chi-squared)，瑞利分布(Rayleigh)，威布尔分布(Weibull)，伯努利分布(Bernouli)以及几何分布(geometric distributions)。对于$\theta$，要求它可以通过一个连接函数$g$转化成线性组合，即满足：
+\begin{displaymath}
+g(\theta(x)) = x^{'}\beta=\beta_0 + \sum_{j} x_j \beta_j
+\end{displaymath}
+
+# Logistic回归
+
+## 模型介绍
+
+Logistic回归常用于处理二分类数据，模型形式如下：
+
+\begin{equation}
+\label{logistic_model}
+y|x \sim Binom(1, p=\frac{e^{x^{'}\beta}}{1+e^{x^{'}\beta}})
+\end{equation}
+
+$y$是二分类数据，满足$n=1$，$p=e^{x^{'}\beta}/(1+e^{x^{'}\beta})$的二项式分布。$p(x)$可以通过连接函数$g(t)=\log(t/(1-t))$转化成线性形式：
+
+\begin{displaymath}
+g(p(x)) = \log(\frac{p(x)}{1-p(x)}) = \log(e^{x^{'}\beta}) = x^{'}\beta
+\end{displaymath}
+
+$g(p(x))$可以用优势比（Odds Ratio）解释。优势比用来描述两个二分随机变量的差异性，它的定义如下：
+\begin{Definition}
+（优势比）
+\begin{equation}
+\label{odds_ratio_df}
+OR(y_1,y_2)=\frac{P(y_1=1)/P(y_1=0)}{P(y_2=1)/P(y_2=0)}
+\end{equation}
+\end{Definition}
+
+根据优势比定义，写出分布\eqref{logistic_model}在$y|x=1$和$y|x=0$时的条件概率：
+\begin{displaymath}
+OR(y|x=1, y|x=0) = \frac{P(y=1|x=1)/P(y=0|x=1)}{P(y=1|x=0)/P(y=0|x=0)}
+\end{displaymath}
+
+二项式分布的概率密度函数为$B(1, p(x)) = \dbinom{1}{k}p(x)^k (1-p(x))^{1-k}$，由此易得：
+
+\begin{displaymath}
+\begin{split}
+P(y=1|x=1) &= \dbinom{1}{1} p(x)^1 (1-p(x))^0 = \frac{e^{\beta}}{1+e^{\beta}}\\
+P(y=0|x=1) &= 1 - p(x=1) = \frac{1}{1+e^{\beta}}\\
+P(y=1|x=0) &= p(x=0) = \frac{1}{2}\\
+P(y=0|x=0) &= 1-p(x=0) = \frac{1}{2}
+\end{split}
+\end{displaymath}
+
+将上面结果带入\eqref{odds_ratio_df}中，可得：
+\begin{displaymath}
+\begin{split}
+OR(y_1,y_2) &= \frac{P(y_1=1)/P(y_1=0)}{P(y_2=1)/P(y_2=0)}\\
+&= \frac{\frac{e^{\beta}}{1+e^{\beta}}/\frac{1}{1+e^{\beta}}}{\frac{1}{2}/\frac{1}{2}} = e^\beta
+\end{split}
+\end{displaymath}
+
+表达式最终等于一个常量$e^\beta$，表示当$x$从0变成1时引起随机变量$y$的概率变化为$e^\beta$，那么$e^{\beta x}$可以理解成增长量为$x$时$y$的概率变化量（对数优势比）。
+
+## 用R建立Logistic模型
+
+采用`PlantGrowth`数据集来演示在R中建立Logistic模型的方法：
+```{r plantgrowth, eval=TRUE, echo=TRUE}
+head(PlantGrowth)
+summary(PlantGrowth)
+```
+
+由于Logistic回归响应变量为二分型，故以2为阈值建立二分变量：
+
+```{r bin, eval=TRUE, echo=TRUE}
+weight.factor <- cut(PlantGrowth$weight, 2, labels=c("Light", "Heavy"))
+plot(table(PlantGrowth$group, weight.factor))
+```
+
+现在以`weight.factor`为响应变量，`PlantGrowth$group`为解释变量建立GLM模型，由于是二分变量，残差分布类型设定为`binomial`, 注意`binomial`的连接函数缺省设置即为`logit`即进行Logistic变换
+
+```{r glm1, eval=TRUE, echo=TRUE}
+glm.1 <- glm(weight.factor ~ PlantGrowth$group, family = binomial)
+summary(glm.1)
+```
+
+`summary`得出的结果与一般的线性模型一致，但多出了一个对模型优度的AIC指标。用`predict`可以给出模型拟合得到的效应变量
+
+```{r glm.1predict, eval=TRUE, echo=TRUE}
+predict(glm.1, type="response")
+```
+
+参考`help(predict.glm)`可以知道，参数`type`可以有三个取值，分别是`link`，`response`，`terms`，`link`将给出线性化的解释变量($x\beta$)，在logistic回归下就是对数优势比（log odds）,`response`会给出响应变量为`heavy`时的概率（因为`heavy`被编码成1，参考`contrasts(weight.factor)`），即给出$p(x)=e^x\beta/(1+e^{x\beta})$。`terms`给出线性的解释变量的具体数值。
+
+来看看拟合的结果：
+
+```{r predict.glm1, eval=TRUE, echo=TRUE}
+PlantGrowth$weight.factor <- weight.factor
+p1 <- predict(glm.1, type="response")
+p1.facotr <- rep('Heavy',length(p1))
+p1.facotr[p1<=0.5] <- 'Light'
+PlantGrowth$predict <- p1.facotr
+pg <- melt(PlantGrowth, id=c('weight', 'group'))
+fig_pg <- ggplot(data = pg) + 
+  geom_point(aes(x=group, y=weight, color=value)) + 
+  facet_grid(variable~.)
+fig_pg
+
+```
+
+# 泊松回归
+
+泊松回归中模型的形式为$y|x \sim Poisson(\lambda(x)=e^{x\beta})$，其连接函数是$g(t)=log(t)=log(e^{x\beta})=x\beta$。
+
+泊松回归常见用于时间序列数据，下面用一个传染病记录的数据集，该数据集记录了每天新增感染人数：
+
+```{r possion, eval=TRUE, echo=FALSE}
+cases <-  
+structure(list(Days = c(1L, 2L, 3L, 3L, 4L, 4L, 4L, 6L, 7L, 8L, 
+8L, 8L, 8L, 12L, 14L, 15L, 17L, 17L, 17L, 18L, 19L, 19L, 20L, 
+23L, 23L, 23L, 24L, 24L, 25L, 26L, 27L, 28L, 29L, 34L, 36L, 36L, 
+42L, 42L, 43L, 43L, 44L, 44L, 44L, 44L, 45L, 46L, 48L, 48L, 49L, 
+49L, 53L, 53L, 53L, 54L, 55L, 56L, 56L, 58L, 60L, 63L, 65L, 67L, 
+67L, 68L, 71L, 71L, 72L, 72L, 72L, 73L, 74L, 74L, 74L, 75L, 75L, 
+80L, 81L, 81L, 81L, 81L, 88L, 88L, 90L, 93L, 93L, 94L, 95L, 95L, 
+95L, 96L, 96L, 97L, 98L, 100L, 101L, 102L, 103L, 104L, 105L, 
+106L, 107L, 108L, 109L, 110L, 111L, 112L, 113L, 114L, 115L), 
+    Students = c(6L, 8L, 12L, 9L, 3L, 3L, 11L, 5L, 7L, 3L, 8L, 
+    4L, 6L, 8L, 3L, 6L, 3L, 2L, 2L, 6L, 3L, 7L, 7L, 2L, 2L, 8L, 
+    3L, 6L, 5L, 7L, 6L, 4L, 4L, 3L, 3L, 5L, 3L, 3L, 3L, 5L, 3L, 
+    5L, 6L, 3L, 3L, 3L, 3L, 2L, 3L, 1L, 3L, 3L, 5L, 4L, 4L, 3L, 
+    5L, 4L, 3L, 5L, 3L, 4L, 2L, 3L, 3L, 1L, 3L, 2L, 5L, 4L, 3L, 
+    0L, 3L, 3L, 4L, 0L, 3L, 3L, 4L, 0L, 2L, 2L, 1L, 1L, 2L, 0L, 
+    2L, 1L, 1L, 0L, 0L, 1L, 1L, 2L, 2L, 1L, 1L, 1L, 1L, 0L, 0L, 
+    0L, 1L, 1L, 0L, 0L, 0L, 0L, 0L)), .Names = c("Days", "Students"
+), class = "data.frame", row.names = c(NA, -109L))
+
+
+```
+
+```{r case, eval=TRUE, echo=TRUE}
+head(cases)
+```
+
+绘制出每天新增感染人数的散点图
+
+```{r cases_plot, eval=TRUE, echo=TRUE}
+fig_cases <- ggplot(data=cases) + geom_point(aes(x=Days, y=Students))
+fig_cases
+```
+
+执行glm
+
+```{r cases_glm, eval=TRUE, echo=TRUE}
+glm.2 <- glm(Students ~ Days, family=poisson, data=cases)
+summary(glm.2)
+```
+
+来看看拟合的结果
+
+```{r fig_compare, eval=TRUE, echo=TRUE}
+cases_predict <- predict(glm.2, type="response")
+cases$predict <- cases_predict
+cases_melt <- melt(cases, id=c("Days"))
+fig_cases2 <- ggplot(data=cases_melt) + 
+  geom_point(aes(x=Days, y=value, color=variable)) 
+fig_cases2
+```
