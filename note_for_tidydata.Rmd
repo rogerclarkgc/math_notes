@@ -1,0 +1,485 @@
+---
+title: "利用tidyverse规范数据分析流程"
+author:
+  - rogerclark
+documentclass: ctexart
+output:
+  rticles::ctex:
+    fig_caption: yes
+    number_sections: yes
+    toc: yes
+classoption: "hyperref,"
+---
+```{r initial_chunk_set, include=FALSE}
+knitr::opts_chunk$set(list(eval=TRUE, 
+                           echo=FALSE, 
+                           error=TRUE, 
+                           warning=FALSE,
+                           message=FALSE))
+```
+```{r load_pack}
+library(tidyverse)
+library(nycflights13)
+```
+
+# 数据变换
+
+tidyverse的核心组件readr、dplyr、purr等包提供了一套完整的数据读取、清洗、变换工具，使得用户可以写出规范、简洁、可重复性高、可读性高的数据处理代码
+
+这里使用`nycflights13:flights`的数据来做示范，一共有336776个观测的航班数据
+
+```{r flights, echo=F}
+nycflights13::flights
+flights <- nycflights13::flights
+```
+
+## dplyr基本操作
+
+* 利用`filter()`来选取观测行
+* 利用`arrange()`来对观测进行重新排序
+* 利用`select()`来对变量进行选择
+* 利用`rename()`来对变量进行重命名
+* 利用`mutate`来产生新的变量
+* 利用`summarise()`来聚合、折叠已有的变量
+
+以上语句可以用函数形式调用，第一个参数为被操作的数据框，第二个参数描述操作，并且这些函数总是返回新的数据框。当然，更方便的形式是使用`%>%`管道符号来进行
+
+    new_data <- data %>% filter(...) %>% select(...) %>% mutate(...)
+
+### `filter()`选取观测
+
+`filter()`类似与R中原生的行索引操作，比如`data[data$var>a, ]`。但更加简洁和易读
+
+```{r filter_exp1, echo=T}
+flights %>% filter(month == 1, day == 1)
+```
+
+更复杂的逻辑运算也可以使用：
+
+```{r filter_exp2, echo=T}
+flights %>% filter(month >=1, day >=2)
+```
+
+集合操作，诸如交、并、补等操作也能使用：
+
+```{r filter_exp3, echo=T}
+# or 
+# flights %>% filter(month %in% c(11, 12))
+flights %>% filter(month == 11 | month == 12)
+```
+### `arrange`重排观测
+
+`arrange`用于根据给出的变量的值来重排观测，当有多个变量时，按照变量给出的顺序来排序，即当第一变量出现相同排序时，使用第二变量来排序，以此类推
+
+```{r arrange_exp1, echo=T}
+flights %>% arrange(year, month, day)
+```
+
+默认的时按照升序来排列，如果按照降序，需要额外指定`desc()`
+
+```{r arrange_exp2, echo=T}
+flights %>% arrange(desc(dep_delay))
+```
+
+### `select`选取变量
+
+`select`类似R中对数据框选取变量的操作，即数据框的列操作`data[, c(var1, var2)]`或`data$var1`
+
+```{r select_exp1, echo=T}
+flights %>% select(year, month, day)
+```
+
+`select`也可以像数据框一样用":"来切片索引
+
+```{r select_exp2, echo=T, eval=F}
+flights %>% select(year:day)
+```
+
+同样，“-”可以用来排除变量
+
+```{r select_exp3, echo=T}
+flights %>% select(-(year:day))
+```
+
+对于更复杂的选择，比如基于变量字符来匹配，有如下几个函数可用：
+
+* `start_with('abc')`：匹配“abc”开头的变量
+* `ends_with('xyz')`：匹配“xyz”结尾的变量
+* `contains('ijk')`: 匹配包含“ijk”的变量
+* `matches("[1-9]")`：按照正则表达式规则匹配，这里匹配包括1-9的变量
+* `num_range("x", 1;3)`：匹配x1, x2, x3
+
+`select`还可以在选取变量的同时对变量进行重命名`select(flights, ddl = dep_delay`，但它会在重命名的同时丢弃其他没有被显式声明的变量，如果只是想对变量进行重命名，那么建议使用`rename(flights, ddy=dep_delay)`。
+
+### 用`mutate()`加入新变量
+
+`mutate()`可以用来加入新的变量，常见的方式是加入基于已有的变量通过运算得到的新变量
+
+```{r mutate_exp1, echo=T}
+flights %>% select(year:day, ends_with("delay"), distance, air_time) %>%
+  mutate(gain = dep_delay - arr_delay, speed = distance / air_time * 60)
+```
+
+`mutate`总是会把新生成的变量放在表的最右侧。另外新产生的变量无需运行就可以在同一语句中引用：
+```{r mutate_exp2, echo=T, eval=F}
+flights %>% mutate(hours = air_time / 60, gain = dep_delay - arr_delay,
+                   gain_per_hour = gain / hours)
+```
+
+如果只想保留新产生的变量，可以使用`transmute()`。
+
+### 用`summarise()`聚合变量
+
+`summarise()`的功能类似R中本来提供的`aggregate()`函数，利用它可以实现对多个变量按照观测进行整合运算，这种运算最直接的变量就是产生的新数据行数小于或等于原来的数据。
+
+```{r summ_exp1, echo=T}
+flights %>% summarise(delay = mean(dep_delay, na.rm=T))
+```
+
+`summarise`单独使用用处并不大，如果结合`group_by`会变得很常用，`group_by`可以让数据以选中的因子变量为分组依据进行整合，而`summarise`可以让某一个变量按照整合好的因子变量进行折叠。
+
+```{r summ_exp2, echo=T}
+
+flights %>% group_by(year, month, day) %>% 
+  summarise(delay = mean(dep_delay, na.rm = T))
+```
+
+上面的例子中，先用`group_by`按照年月日三个变量整合数据，随后利用`summarise`来用平均值折叠相应的整合组
+
+### 一些有用的总结函数
+
+1. 可以使用`mean(x)`，`mean(x)`来折叠观测，分别得出其平均值和中位数值
+
+2. `sd(x)`，`IQR(x)`，`mad(x)`用来表示数据散布，这些函数分别计算标准差、四分位数差、绝对中位差。
+
+3. `min(x)`，`max(x)`，`quantile(x, 0.25)`分别用于计算最小值、最大值，0.25分位数
+
+4. `first(x)`，`last(x)`，`nth(x, 2)`类似`x[1]`，`x[2]`这样的索引取值。
+
+5. `n()`可以用来输出当前分组下各个组有多少观测，`sum(!is.na(x))`统计非缺失值，`n_distinct(x)`输出每组里的非重复的集合大小
+
+## 数据清洗
+
+往往通过实验或者调查获得的数据不是整齐划一、容易进行分析的，这是就需要对数据进行清洗，让它变成容易分析的形式。整洁的数据常常有如下特点：
+
+* 行是观测、列是变量
+* 每列变量都有明确的类型且每个变量都要独立成一列
+* 每行的观测的数据类型要统一
+* 明确且统一的缺失值标记
+* “扁平”的数据结构
+
+下面给出四个列子，首先是整洁的数据，6行观测，4个变量，都有明确唯一的数据类型
+
+```{r prepare_data, echo=F}
+table1
+```
+
+第二个表格，第三列变量`type`不够明确，它是两个变量聚合在一起的
+
+```{r prepare_data2, echo=F}
+table2
+```
+
+第三个表格，`rate`变量数据不明确，本身是数值型，但却用字符型描述
+
+```{r prepare_data3, echo=F}
+table3
+```
+
+第四个表格，`cases`变量没有单独成列，而是分散到年份中，这样导致`1999`和`2000`变量没有明确的意义
+
+```{r prepare_data4, echo=F}
+table4a
+```
+
+### 数据整合
+
+
+
+首先来解决表格4a的问题，这个表格中本来是数值的`1999`和`2000`的变量却成了列，通过`gather`函数把这两个列划去，生成以划去列为变量的新列，最把原来列里的数值（实际是表格1中的`cases`列的数值）按照这个新列重新整合。`gather()`接受的参数表为：`gather(..., key, value)`。第一个匿名参数列表是要划去的列，`key`是划去变量组成的新列的名字，`variable`是划去变量中重新整合的数值的名字。
+
+```{r gather_exp1, echo=T}
+table4a %>% gather('1999', '2000', key = "year", value = "cases")
+
+```
+
+### 数据分散
+
+数据分散可以理解成数据整合的逆操作，如果整合是将几个列划去并形成新列，那么分散就是把原来一个列里数值按照类型分开，并形成几个新列。
+
+```{r prepare_data5, echo=F}
+table2
+```
+
+这里用来分散表格2中的`type`列。把里面的`cases`值和`population`值分开，形成新的两列，最后把`count`列的数值填入其中
+
+```{r spread_exp1, echo=T}
+# 注意这里`count`没有用双引号，也可以加上，避免函数名冲突
+table2 %>% spread(key = 'type', value = count)
+```
+
+### 数据分离
+
+`separate()`能解决表格3中`rate`列不明确的问题，它把`rate`列中字符型数值按照`/`分开，再把分开的两个数值单独成列。
+
+```{r sparate_exp1, echo=T}
+table3 %>% separate(rate, into = c("cases", "population"),sep = "/", convert = T)
+```
+
+这里指定了分割符号`/`还让`separate`进行类型转换`convert = T`。当为`sep`指定一个整型时，函数会按照字符出现的顺序进行分割：
+
+```{r separate_exp2, echo=T}
+table3 %>%separate(year, into = c("century", "year"), sep = 2)
+```
+
+### 数据结合
+
+`unite`是`separate`的反操作，把两列数据按照一定方式结合到一起，
+
+```{r unit_exp1, echo=T}
+table3 %>% separate(year, into=c("century", "year"), sep=2) %>% 
+  unite(new, century, year)
+```
+
+`unite`还有一个参数`sep`用于指定连接符号，默认是`_`
+
+### 总结
+
+1. `spread`和`gather`是一对针对行列变换的操作，它们的共同点是会使得数据框的维度发生变化。`spread`把一个变量的数值分散到多个新变量中，`gather`把多个变量去掉，变成单独一列，再把原来变量里的数值单独成列。
+
+2. `separate`和`unite`是一对针对列的操作，它们不会使得数据的行数发生变化，但会使列发生变化。`separate`常用来把一列变量里的所有数值按照一定规则分割成两个变量。`unite`则相反，能让多个变量按照一定规则合并成一个变量
+
+# 关系型数据
+
+这一节重点讨论如何进行多个数据表的关系操作。包括：
+
+* Mutating joins: which add new variables to one dataf frame from matching observations in another.
+* Filtering joins: which filter observations from one data frame based on whether or not they match an observation in the other table
+* Set operations: which treat observations as if they were set elements
+
+这里使用五个数据表来做例子进行关系操作，`flights`，`airlines`, `airports`, `planes`, `weather`
+
+这些数据表之间有多个变量时相互联系的，如下图所示：
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=8cm,height=5cm]{relation.jpg}
+\caption{数据表之间的关系}
+\label{relation}
+\end{figure}
+
+
+## 键
+
+用来联系多对表格的变量称之为键，键可以是一个变量或者一组变量。有时一个变量就可以唯一标识一个观测。如`planes`数据表中的`tailnum`唯一标识一行观测。有时往往需要多个变量一起才能表示一个观测，如`weather`数据集中，`year`，`month`，`day`， `hour`和`origin`加一起才能标识一行观测。
+
+有两种类型的键
+
+* 主键（primary key）：能唯一表示所在数据集中的观测，如`planes`中的`tailnum`就是一个主键
+* 外部键（foreign key）：能唯一表示其他数据集中的观测，如`flights`中的`tailnum`就是一个外部键，它能唯一标识`planes`数据集中的观测
+
+## Mutating joins
+
+在执行具体操作前，有必要了解连接操作的内涵，这里使用两个简单的表做例子：
+
+```{r join_data, echo=T, eval=T}
+x <- tribble(
+  ~key, ~val_x,
+     1, "x1",
+     2, "x2",
+     3, "x3"
+)
+y <- tribble(
+  ~key, ~val_y,
+     1, "y1",
+     2, "y2",
+     4, "y3"
+)
+x
+y
+```
+
+上面的两个表格，都有两列分别对应键和值。连接操作就是一一比较两个表的键，然后依照某种规则将两个表的值合并成一个表：
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=4.5cm,height=2cm]{join.jpg}
+\label{join}
+\end{figure}
+
+### Inner join
+
+最简单的连接方式，会匹配两个表键值相等的行，然后把它们整合到一个新表中：
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=4.5cm,height=2cm]{inner_join.jpg}
+\label{inner_join}
+\end{figure}
+
+执行inner join很简单，只需要使用`inner_join`函数：
+
+```{r inner_join_exp, echo=T, eval=T}
+x %>% inner_join(y, by = "key")
+```
+
+可以看到只有两个表中键值完全相同的1和2在新表中出现，键值不同的3和4都被丢弃。
+
+### Outer joins
+
+inner join只会保留在两个表都出现的值，但outer join会保留至少在一个表中出现的值，一共有三种方式：
+
+* left join: 只会保留在`x`中出现的值
+* right join：只会保留在`y`中出现的值
+* full join：`x`和`y`中的值都会保留
+
+它们的区别可以用下面的图来描述，首先是left join，只会保留x中的值：
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=4.5cm, height=2cm]{outer_join1.jpg}
+\label{outer_join1}
+\end{figure}
+
+\newpage
+
+然后是right join，只保留y中的值
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=4.5cm, height=2cm]{outer_join2.jpg}
+\label{outer_join2}
+\end{figure}
+
+最后是full join，两个表的值都保留，对应部分用NA填补
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=4.5cm, height=2cm]{outer_join3.jpg}
+\label{outer_join3}
+\end{figure}
+
+在上面这几种方式中，left join相对比较常用。
+
+### 重复键
+
+当数据表中出现重复键时，连接操作会按照一对多的方式连接这些重复键，下面是两个例子，分别表示当一个表中有重复键和两个表中都有重复键的情况
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=4.5cm, height=2cm]{one_dup.jpg}
+\label{one_dup}
+\end{figure}
+
+这里可以看到x表中的键值2出现两次，那么如果是left join方式，这个键值2会和y表中的2产生多对一的连接，产生一个四行的新表
+
+```{r dup_exp, eval=T, echo=T}
+x <- tribble(
+  ~key, ~val_x,
+     1, "x1",
+     2, "x2",
+     2, "x3",
+     1, "x4"
+)
+y <- tribble(
+  ~key, ~val_y,
+     1, "y1",
+     2, "y2"
+)
+left_join(x, y, by = "key")
+```
+
+当两个表中都有重复键，这时连接将产生重复键值的所有组合可能，这里2在两个表中都出现两次，所产生2*2种组合
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=4.5cm, height=2cm]{two_dup.jpg}
+\label{two_dup}
+\end{figure}
+
+```{r dup_exp2, eval=T, echo=T}
+x <- tribble(
+  ~key, ~val_x,
+     1, "x1",
+     2, "x2",
+     2, "x3",
+     3, "x4"
+)
+y <- tribble(
+  ~key, ~val_y,
+     1, "y1",
+     2, "y2",
+     2, "y2",
+     3, "y4"
+)
+left_join(x, y, by = "key")
+```
+
+### 用多个键进行连接
+
+`join`系列函数通过参数`by`来指定连接使用的键，在上面例子中，只是用了一个键，但往往你需要多个用多个键来连接两个表，这个功能很容易就可以实现。
+
+* 默认情况下，即`by=NULL`时，`join`函数会使用两个表中都同时出现的键，只要两个表中有键名字相同，就会被认为是同时出现。比如`flights`和`weathers`中都出现了`year`，`month`，`day`，`hour`和`origin`
+
+```{r nature_join, echo=T, eval=T}
+flights2 <- flights %>% select(year:day, hour, origin, dest, tailnum, carrier)
+flights2 %>% left_join(weather)
+```
+
+* 有时两个键虽然名字一样，但它们中的数值其实是不同的东西，这时连接往往不会得到我们想要的结果，比方说，我们想让航班`flights2`和`planes`连接，好能够看出某个航班使用了什么型号的飞机。这时使用`year`连接就不行，因为`year`在`flights2`中代表航班时间，而在`planes`中代表飞机的出厂年。要达成目标应该使用两个表中的主键唯一表示每个观测，这里使用`tailnum`，它是`planes`的主键，是`flights2`的外部键。
+
+```{r nature_join2, echo=T}
+flights2 %>% left_join(planes, by="tailnum")
+```
+
+注意这里在两个表中都出现的键`year`被分别用`year.x`和`year.y`区分，以体现区别。
+
+* 有时也需要两个不同名字的键进行连接，假设我们想知道每趟航班中出发地`origin`和目的地`dest`的地理坐标，这个地理坐标在`airports`数据集中，同样airports数据集中机场的名字用`faa`记录，这是我们就需要做两次连接，分别让函数查找在`faa`中匹配`origin`和`dest`的观测。用`join`函数实现，可以用`by=c("a"="b")`的方式来指定。
+
+```{r nature_join3, echo=T}
+flights2 %>% left_join(airports, c("dest" = "faa"))
+flights2 %>% left_join(airports, c("origin" = "faa"))
+```
+## filter join
+
+过滤连接的类似前面的连接方式，但是它只会保留一个表格的内容而不是两个表格的内容。它由两种连接方式：
+
+* `semi_join(x, y)`：只保留x表中与y表相匹配的观测
+* `anti_join(x, y)`：丢弃x表中与y表中相匹配的观测
+
+过滤连接在汇总数据时十分有用，假设你想筛选出最受欢迎的10个目的地，并且筛选包含这10个目的地的航班。直观的看，你可以这样做，首先筛选flights中的出现次数最多前10个目的地。然后筛选出包含这些目的地的航班。那么代码应该这样写：
+
+```{r filter_joinexp1, echo=T}
+top_dest <- flights %>% count(dest, sort=TRUE) %>% head(10) 
+flights %>% filter(dest %in% top_dest$dest)
+```
+
+上面的写法当然可以，但是当我们需要匹配多个键时`%in%`操作符就不能用了，这时使用`semi_join`：
+
+```{r semi_join, echo=T}
+flights %>% semi_join(top_dest)
+```
+
+用图来表示`semi_join`：
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=4.5cm, height=2cm]{semi_join1.jpg}
+\label{semi_join1}
+\end{figure}
+
+值得注意，虽然匹配方式和mutating join一样，但是semi join在处理重复键时不会像mutating join一样重复排列键值：
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=4.5cm, height=2cm]{semi_join2.jpg}
+\label{semi_join1}
+\end{figure}
+
+anti join是semi join的反操作，会划去x表中与y表匹配的值：
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=4.5cm, height=2cm]{anti_join.jpg}
+\label{anti_join}
+\end{figure}
