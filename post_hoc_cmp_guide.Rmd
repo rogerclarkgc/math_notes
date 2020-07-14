@@ -1,0 +1,276 @@
+---
+title: "后验比较：原理与方法"
+author:
+  - rogerclark
+documentclass: ctexart
+geometry: margin=3cm
+output:
+  rticles::ctex:
+    fig_caption: yes
+    number_sections: yes
+    toc: yes
+classoption: "hyperref,"
+---
+
+```{r set_knitr, echo = F}
+knitr::opts_chunk$set(echo = F, eval = T, message = F, 
+                      error = F, warning = F,
+                      fig.width = 5, fig.height = 3.5)
+options(digits = 5)
+```
+
+```{r load_pac}
+library(emmeans)
+library(latex2exp)
+library(tidyverse)
+```
+
+```{r fig_theme}
+my_theme <- theme_bw() + theme(axis.title = element_text(size = 20),
+                               axis.text = element_text(size = 15),
+                               legend.text = element_text(size = 15),
+                               legend.title = element_text(size = 15),
+                               strip.text = element_text(size = 8))
+```
+
+# 认识边际平均数
+
+## `pigs`数据集的例子
+
+我们使用一个数据集作为例子来认识边际平均数，这里有一个`pig`数据集，该数据集来自一个具有双因子完全组合的非均衡实验。实验为了研究饲料中蛋白质含量对猪肉亮氨酸浓度的影响，设计了三种（脱脂奶、大豆、鱼）饲料的四个蛋白浓度梯度（9%，12%，15%，18%）共计12个实验条件来喂食，最后测量猪肉的亮氨酸浓度。下面是这次实验的数据表与折线图（为简单起见，表只显示5行）
+
+```{r pigs_data}
+knitr::kable(head(pigs,5))
+```
+
+```{r interaction_pigs}
+pigs_f <- pigs %>% mutate(percent = as.factor(percent))
+fig_pl <- pigs_f %>% 
+  group_by(percent, source) %>% 
+  summarise(conc = mean(conc)) %>% 
+  ggplot(aes(x = percent, y = conc, color = source)) + 
+  geom_point() + 
+  geom_line(aes(group = source), size = 1) + 
+  my_theme
+
+fig_pl
+```
+
+通过折线图，我们能对实验结果做一个直观的分析，首先饲料的蛋白浓度对猪肉亮氨酸浓度的影响应该是正向的。亮氨酸在三种饲料的四个浓度梯度下的增加量不同，脱脂奶似乎对亮氨酸浓度的提升最有帮助。
+
+我们现在首先对浓度的正向影响进行分析，最简单的方法是计算四个浓度梯度下`conc`均值。这时的均值就叫做在`percent`方向的\textbf{边际均值}。
+
+```{r pigs_percent_mm}
+knitr::kable(pigs_f %>% group_by(percent) %>% 
+               summarise(conc = mean(conc)))
+```
+
+令人吃惊的是，percent方向的边际均值并没有和上文中折线图一样有明显区别，其中浓度12，15，18差别很小，只有浓度9比其他三种浓度要小的多。
+
+下面我们换一种思路，我们计算折线图中点的均值，这些点其实本身也是均值，它们是$3 \times 4$种实验条件组合下的均值：
+
+```{r pigs_interaction_mean}
+knitr::kable(pigs_f %>% group_by(source, percent) %>% 
+               summarise(conc = mean(conc)))
+```
+
+然后，我们再计算percent方向的边际均值：
+
+```{r pigs_percent_mm2}
+knitr::kable(pigs_f %>% group_by(source, percent) %>% 
+               summarise(conc = mean(conc)) %>% 
+               group_by(percent) %>% 
+               summarise(conc = mean(conc)))
+```
+
+这样计算出的边际均值就和我们从折线图上得到直观感受一致了。那么为何会产生这样的结果，其中原因就出在非平衡的实验设计上：
+
+```{r pigs_counttable}
+knitr::kable(with(pigs_f, table(source, percent)))
+```
+
+可以看到四个浓度梯度的观测数不同，浓度9组有8个观测，浓度18组只有5个，在计算边际平均时，浓度18组的低值fish组有3个观测，而高值skim组仅有1个结果，这种不均衡的设计拉低了总体的均值。使得不同结果差距变小。而第二种计算方式其实计算了\textbf{单元格均数}的\textbf{边际均数}。单元格均数首先分别计算12个实验条件下的均值，此时再计算条件均值是基于12个单元格均值的，这时所有均值权重均为1，这样就避免了非均衡的实验数据造成的偏差。
+
+## 模型的reference grid
+
+估计模型的边际平均是模型的后验统计中的一个基本过程。一个模型的边际平均是由它的reference grid决定的，reference grid可以理解成模型中因子的组合。对于因子型变量，很容易用因子的层次叉表构造出一个reference grid，对于连续的协变量，一般使用它的均值作为reference grid。一般来说，reference grid是所有层次的组合。
+
+在这里，我们构建一个`pigs`数据集的线性模型来演示reference grid.
+
+```{r pigs_lm, echo = T}
+pigs.lm1 <- lm(log(conc) ~ source + percent, data = pigs_f)
+```
+
+使用`emmeans`包来计算`log(conc)`的边际均值，首先来创建reference grid. 
+
+```{r pigs_lm_ref, echo = T}
+ref_grid(pigs.lm1)
+```
+
+`emmGrid`对象显示该模型的reference grid是为两个维度，并且还检测出了做了响应变量对数转换
+
+```{r pigs_lm_ref2, echo = T}
+ref_grid(pigs.lm1)@grid
+```
+
+显然有12个组合，表中`.wgt.`其实就是对应组合的观测数量。
+
+现在我们将`percent`作为一个连续型协变量重新建立模型，那么此时的reference grid将会不同
+
+```{r pigs_lm2, echo = T}
+pigs.lm2 <- lm(log(conc) ~ source + percent, data = pigs)
+ref_grid(pigs.lm2)
+ref_grid(pigs.lm2)@grid
+```
+
+由于此时的`percent`是连续变量，因此使用其所有观测的均值来作为一个层次，因此只有$3 \times 1$种组合。此时的`.wgt.`相当于`source`的三个层次的观测数。
+
+## 估计边际平均
+
+在得到了reference grid后，我们开始估计模型的边际平均，但对于一个模型来说，我们通常是计算出模型的预测值，然后基于reference grid来做边际平均，所以这更像是“预测”而不是“估计”。和前文的例子一样，我们首先计算模型在reference grid下的单元格平均
+
+```{r pigs_pre1, echo = T}
+pigs.ref1 <- ref_grid(pigs.lm1)
+pigs.pred1 <- matrix(predict(pigs.ref1), 
+                     nrow = 3,
+                     dimnames = list(pigs.ref1@levels$source,
+                                     pigs.ref1@levels$percent))
+
+```
+
+有了`pigs.pred1`，两个因子的边际平均就很容易得出：
+
+```{r pigs_pre_emm, echo = T}
+# source的边际平均
+apply(pigs.pred1, 1, mean)
+```
+
+```{r pigs_pre_emm2, echo = T}
+# percent的边际平均
+apply(pigs.pred1, 2, mean)
+```
+
+对于第二个模型`pigs.lm2`由于只有`source`一个因子有大于1个层次，所以边际平均就相当于reference grid的单元格均值
+
+```{r pigs_pre2_emm, echo = T}
+predict(ref_grid(pigs.lm2))
+```
+
+上述步骤计算各个因子的边际均值未免繁琐，我们可能不太关注reference grid的单元格均值，最好有函数能直接给出模型中某一因子的边际均值以及其他统计参数，使用`emmeans`函数是一个简单的方法。
+
+```{r pigs_emm, echo = T}
+emmeans(pigs.lm1, "percent")
+```
+
+## 变更reference grid
+
+通过传入`ref_grid`函数的参数可以实现对reference grid的更改，以包含协变量的`pigs.lm2`模型为例：
+
+```{r change_ref_grid1, echo = T}
+ref_grid(pigs.lm2, cov.keep = "percent")
+```
+
+使用`cov.keep = "percent"`将使函数使用`percent`变量值的最小集合作为层次而不是平均数，此时这个协变量会被视作一个因子变量。另外通过`cov.reduce`指派一个缩减函数也可更改协变量的层次：
+
+```{r change_ref_grid2, echo = T}
+ref_grid(pigs.lm2, cov.reduce = range)
+```
+
+另外一个更改reference grid的参数为`at`，具体用法见下面例子，这里使用内置数据集`mtcars`为例子，这个数据集收集了一系列车型的单位里程燃油消耗量以及车型参数。数据基本如下(只显示前5行前4列)：
+
+```{r mtcars_exp}
+knitr::kable(head(mtcars[, c(1:4)],5))
+```
+
+这些原始数据均为数值型，因此默认情况的reference grid为均值：
+
+```{r mtcars_ref_grid, echo = T}
+mtcars.lm <- lm(mpg ~ disp * cyl, data = mtcars)
+ref_grid(mtcars.lm)
+```
+
+使用`at`人为指定因子的层次：
+
+```{r mtcars_ref_grid2, echo = T}
+mtcars.rg <- ref_grid(mtcars.lm, 
+                      cov.keep = 3,
+                      at = list(disp = c(100, 200, 300)))
+mtcars.rg
+```
+
+在这里同时使用了`cov.keep`和`at`两个参数，其中`cov.keep = 3`指将拥有至多3个独特值的协变量作为因子处理，而`at`则显式指定`disp`要分为`c(100, 200, 300)`三个层次。
+
+## 存在衍生协变量或多项式的情况
+
+在拟合模型时不仅仅会拟合简单的一次线性模型，也可能引入衍生的高次项，这种情况下计算边际均值需要注意一个问题，见下面例子：
+
+```{r mtcars_poly1, echo = T}
+mtcars.1 <- lm(mpg ~ factor(cyl) + disp + I(disp^2),
+               data = mtcars)
+emmeans(mtcars.1, "cyl")
+```
+
+上面代码中的模型引入一个二次项`I(disp^2)`，是为`disp`变量的平方。该模型等价如下模型：
+
+```{r mtcars_poly2, echo = T}
+mtcars2 <- mtcars %>% mutate(dispsq = disp^2, 
+                            Cyl = factor(cyl))
+mtcars.2 <- lm(mpg ~ Cyl + disp + dispsq, data = mtcars2)
+emmeans(mtcars.2, "Cyl")
+```
+
+可以看到，两个模型虽然等价，参数估计值完全相同，但它们在`cyl`方向的边际均值估计完全不同，其中问题就处在对reference grid处理上。
+
+```{r mtcars_ref1, echo = T}
+ref_grid(mtcars.1)
+```
+
+```{r mtcars_ref2, echo = T}
+ref_grid(mtcars.2)
+```
+
+两个模型的reference grid不同，第二个模型的`dispsq`应该为$230.72^2$而非68113，如果我们手动指定`dispsq`层次就可以解决这个问题：
+
+```{r mtcars_ref3, echo = T}
+emmeans(mtcars.2, "Cyl", at = list(dispsq = 230.72^2))
+```
+
+总的来说，在建立多项式模型时，应该使用R中内置的`I()`函数和`poly`函数显示声明模型表达式，手动变换生成的高次项虽然不会影响模型拟合，但会影响reference grid的计算结果。
+
+## 图形化结果
+
+`emmeans`包提供一系列方法展现边界均值的图形化结果，最常见的时类似`interaction.plot`的`emmip`，该方法以折线图的形式展示模型的边界均值的预测：
+
+```{r pigs_lm1_ip, echo = T}
+emmip(pigs.lm1, source ~ percent) + my_theme
+```
+
+```{r pigs_lm2_ip, echo = T, fig.pos = "htb"}
+# 由于协变量默认采用均值来缩减，只有一个层次
+# 这样不利于画出折线，固用cov.reduce = F，取消缩减，
+# 将协变量percent当成因子
+emmip(ref_grid(pigs.lm2, cov.reduce = F), 
+      source ~ percent) + my_theme
+```
+
+`emmip`的第二个参数用来描述层次，左侧是分组变量，右侧为解释变量，`emmip`与`interaction.plot`有本质不同，前者基于模型预测得出的边际均值画出折线图，而后者仅仅根据原始数据集画出折线图（见1.1）。可以说`emmip`是基于模型的后验结果。
+
+另外一个展示手段是置信区间图，泛型函数`plot`可处理`emmGrid`对象，展示对象的95%置信区间图。
+
+```{r pigs_lm1_confi, echo = T, fig.pos = "htb"}
+plot(ref_grid(pigs.lm1), by = "source") + my_theme
+```
+
+使用`ggplot2`可以让置信区间图提供更多信息，只需要按需求加入新的图层，因`emmip`本身将返回一个`ggplot`对象，因此叠加图层的操作和`ggplot2`语法一样。
+
+```{r pigs_lm1_conf2, echo = T, fig.pos = "htb"}
+emmip(pigs.lm1, ~percent|source, CIs = T) + 
+  geom_point(aes(x = percent, y = log(conc)), 
+             data = pigs_f,
+             pch = 2, 
+             colour = "darkblue") + 
+  my_theme
+```
+
+这里使用`~percent|source`指将`percent`结果按`source`的类分成子图
+
