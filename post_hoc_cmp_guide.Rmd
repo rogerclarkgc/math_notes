@@ -274,3 +274,203 @@ emmip(pigs.lm1, ~percent|source, CIs = T) +
 
 这里使用`~percent|source`指将`percent`结果按`source`的类分成子图
 
+# 边际平均的比较
+
+这一节主要介绍基于模型边际平均的后验比较，`emmeans`包提供了完整的解决方案。
+
+## 成对比较（Pairwise comparisons）
+
+成对比较是解释因子变量层次间的两两比较，在`emmeans`的后验成对比较中，这由`pairs()`函数完成，该函数接受一个`emmGrid`对象，输出这个对象的成对比较结果。
+
+```{r pigs_pairwise, echo = T}
+pigs.lm <- lm(log(conc) ~ source + factor(percent), data = pigs)
+pigs.emm.s <- emmeans(pigs.lm, "source")
+pairs(pigs.emm.s)
+```
+
+直接调用`pairs`会输出成对比较的估计值，等价于`summary(pairs(pigs.emm.s))`，`summary`对于成对比较，默认采用Tukey方法进行P值校正，若要覆盖默认方法，使用`adjust`参数，另外`summary`默认输出带统计检验的结果，通过`infer = c(FALSE, TRUE)`参数来控制。
+
+上面的比较是基于`percent`的平均来进行，若想按照`percent`分组进行`source`层次的多重比较，可利用`by`参数
+
+```{r pigs.pairswise2, echo = T}
+pigs.emm.s2 <- emmeans(pigs.lm, "source", by = "percent")
+pairs(pigs.emm.s2)
+```
+
+另外，若想改变比较的方向，使用`pairs(pigs.emm.s, reverse = T)`。
+
+### 效应量（Effect size）
+
+除了直接用均值的差异来衡量层次间的差异外，有些期刊也会要求给出效应量，对于组间的均值差异，一般用Cohen's d效应量，对于同分布情况有$d = \frac{M_1 - M_2}{\sigma}$，`eff_size`函数能直接计算两两比较的效应量和效应量的区间：
+
+```{r pigs_effsize1, echo = T}
+eff_size(pigs.emm.s, sigma = sigma(pigs.lm), 
+         edf = df.residual(pigs.lm))
+```
+
+使用`sigma`和`df.residual`两个函数可以很方便的获取残差标准差和自由度。如果不想输出两两比较而只是输出不同层次的效应量，可以使用`method = identity`参数：
+
+```{r pigs_effsize2, echo = T}
+eff_size(pigs.emm.s, sigma = sigma(pigs.lm), 
+         edf = df.residual(pigs.lm),
+         method = "identity")
+```
+
+### 图像化结果
+
+使用`plot`泛型函数可以输出置信区间和多重比较结果（`plot.emm()`）：
+
+```{r pigs_emms_conf1, echo = T, fig.height = 2}
+plot(pigs.emm.s, comparisons = T) + my_theme
+```
+
+上图蓝色柱状为层次的置信区间，箭头则表示多重比较的结果，如果两个均值间的箭头重叠（skim-soy）则表明组间差异”不显著“，如果不重叠（skim-fish）则表示组间差异”显著“。比较的方法默认为Tukey(`adjust = Tukey`)，置信系数设置为0.05`alpha = 0.05`。
+
+（最好不要以p值的某个单一阈值来判定`显著性`，这有违背Fisher检验体系的基本原则，较好的方法是直接报告p值以及参数的自由度以及方差，在不同的样本容量下，p值对实验有效性的判断阈值应该是无法固定的）
+
+相比展示置信区间和基于阈值的显著性，`emmeans`包的作者推荐成对检验的p值图，这种图像直接展示了所有比较的p值，更加准确：
+
+```{r pigs_emms_pwpp, echo = T, fig.height = 3}
+pwpp(pigs.emm.s) + my_theme
+```
+
+`pwpp()`函数输出的成对检验p值图其实是`pairs()`函数的图像化结果，x轴为比较的p值，y轴为被比较因子某个层次的均值，图中方框内数字为层次均值，而垂直短线连接的则为成对比较的两个层次，从上图可以看到`skim-soy`均值对的p大于0.05。
+
+当比较组特别多时，`pwpp`输出的图像较为复杂，例如，我们输出所有12个实验组的比较结果：
+
+```{r pigs_emms_pwpp2, echo = T, fig.height=3}
+pigs.lmint <- lm(log(conc) ~ source * factor(percent), data = pigs)
+# emmeans同样接受公式描述的模型结构
+pigs.cells <- emmeans(pigs.lmint, ~ source * percent)
+# 由于模型的响应变量conc经过log变换，这里用type = "response"逆变换回去
+pwpp(pigs.cells, type = "response") + my_theme
+```
+
+可以看到，这里的比较组实在太多，导致图像过于复杂无法看清，我们利用`by`参数可以让比较按照某一层次分成子图，这样更加清楚：
+
+```{r pigs_emms_pwpp3, echo = T, fig.height = 2, fig.width=6}
+pwpp(pigs.cells, by = "source", type = "response") + 
+  my_theme +
+  theme(axis.text.x = element_text(size = 8))
+```
+
+值得注意的是，`by`参数不仅改变的是图像的布局，其实也改变的Tukey检验的p值校正，可以看到在未分组情况下，由于比较组数多，p值校正更为严苛，skim9-skim15组p值大于0.1而在分组情况下，该组的p值小于0.05。
+
+我们使用`coef`函数能看到`pairs`函数的组合情况:
+
+```{r pigs_emms_pwpp4, echo = T}
+knitr::kable(coef(pairs(pigs.emm.s)))
+```
+
+可以看到`c.1`，`c.2`，`c.3`代表了三种成对比较（$C_3^2 = 3$）。下面的数字代表组合的系数，如第一个比较组`c.1`系数分别为1，-1，0，则代表比较组为$(fish, soy, skim) \cdot (1, -1, 0)^T = fish - soy$。
+
+### 公式描述的比较
+
+`emmeans`函数的`spec`参数（位于参数列表的第二个，所以省略参数名字）不仅接受字符型输入还接受公式对象用于描述分组或比较，这里用`oranges`数据集为例子，该数据集描述了6个商店6天两种售价橘子的销量：
+
+```{r orange_sample}
+knitr::kable(head(oranges))
+```
+
+现在建立一个方差模型来探究第一个种价格`sales`的橘子与天数的关系：
+
+```{r emm_f, echo = T}
+org.aov <- aov(sales1 ~ day + Error(store), data = oranges,
+               contrasts = list(day = "contr.sum"))
+org.emml <- emmeans(org.aov, consec ~ day)
+org.emml
+```
+
+上面的代码建立了一个方差模型，同时`contrat = list(day = "contr.sum"`改变了参考变量的比较形式。在`emmeans`中，采用`consec ~ day`公式描述如何设置比较组，`consec`则指按照相邻的层次依次比较的方式。值得注意的是，此时org.emml为一个`list`对象，因此在运用时应该注意按照列表的方式来调用。
+
+### 自定义比较组
+
+类似于`multcomp`包的`glht`函数，`emmeans`包允许用户自定义比较组，或者计算边际均值任何线性组合的结果。看下面一个例子：
+
+```{r user_spec_comp, echo = T}
+lf <- contrast(pigs.emm.s,
+               list(lambda1 = c(1, 2, 0), lambda2 = c(0, 3, -2)),
+               offset = c(-7, 1))
+confint(lf, adjust = "bonferroni")
+```
+
+这里使用了自定义的线性组合，列表`list(lambda1 = c(1, 2, 0), lambda2 = c(0, 3, -2))`描述了两个线性组合的系数分别为$(fish, soy, skim) \cdot (1, 2, 0)^T = fish - 2soy$和$(fish, soy, skim) \cdot (0, 3, -2)^T = 3soy - 2skim$。`offset`参数为两个线性组合加上一个常数偏置量，最后的两个线性组合变为$\lambda_1 = fish - 2soy - 7$和$\lambda_2 = 3soy - 2skim + 1$。
+
+# 置信区间与检验
+
+## `summary()`、`confint()`和`test()`
+
+当在执行`emmeans()`时，`emmeans()`会调用`summary()`函数来输出格式化的结果。summary函数有一个`infer`参数来控制是否输出置信区间和统计检验。对于reference grid对象，不会输出置信区间和检验结果（`infer = c(F, F)`），对于emmeans对象，只输出置信区间（`infer = c(T, F)`），对于均值比较，只输出检验结果（`infer = c(F, T)`）。用户可以覆盖默认参数，同时输出两个结果：
+
+```{r infer_ex, echo = T}
+summary(pigs.emm.s, infer = c(T, T))
+```
+
+`test()`函数和`confint`分别对应统计检验和置信区间，可以单独调用这两个函数，默认情况下，`test()`函数的零假设为均值等于0，显然很多时候这个检验不实用，我们可能更关心边际均值是否大于某个数字：
+
+```{r test_ex, echo = T}
+test(pigs.emm.s, null = log(40), side = ">")
+```
+
+这里将零假设改成了是否大于log(40)，输出p值的右尾概率。`side`参数还可以为`<`，`!=`，分别对应左尾概率和双侧概率。
+
+## 逆变换（Back-transforming）
+
+线性模型中常常使用变换，`emmeans`可以提供逆变换让结果以原始数据的形式呈现。这一操作由参数`type = "response"`来实现。
+
+```{r back_trans, echo = T}
+test(pigs.emm.s, null = log(40), side = ">", type = "response")
+```
+
+`pig.emm.s`对应的线性模型中（`log(conc) ~ source + factor(percent)`），响应变量`conc`经过了对数变换，这里使用`type = "response"`将`conc`在`source`方向的边际均值逆变换成原始情况。值得注意的是。在`test()`中，零假设仍然是`log(40)`，也就是说零假设必需和线性模型中响应变量的形式一样。逆变换只改变了响应值以及标准误，统计检验量和p值不会改变。
+
+在`confint`函数中，同样也可以使用这一参数：
+
+```{r back_trans2, echo = T}
+confint(pigs.emm.s, side = ">", level = 0.9, type = "response")
+```
+
+同样的，`type = "response"`逆变换了reponse和置信区间，这里使用`side = ">"`输出了置信区间的下界。
+
+## p值校正
+
+`summary()`函数还会对p值进行校正，这是通过`adjust`参数来实现的，对于`ref_grid`对象和`emmeans`对象，默认参数为`adjust = none`。对于`contrast`对象，参数会根据比较类型而定。对于常见的成对检验，p值的校正方法为`adjust = "tukey"`，即Tukey HSD方法。如果用户输入的校正方法不适合当前的多重比较，`summary()`函数会自动改变成合适的方法。
+
+```{r adjust_exp, echo = T}
+confint(pigs.emm.s, adjust = "tukey")
+```
+
+可以看到，校正方法被改成了Sidak校正，因为Tukey HSD方法不适用于置信区间的估计。
+
+`emmeans`提供如下几种p值的校正方法：
+
+* `"tukey"`：即Tukey HSD方法，基于学生分布，多用于成对比较中
+
+* `"scheffe"`：基于F分布计算
+
+* `"sidak"`：用于估计量独立的情况
+
+* `"bonferroni"`：多重比较均可使用，但很保守，比较数量越多，p值的统计推断域将越小，会使得很多在`tukey`方法下“显著”的结果变得“不显著”
+
+* `"dunnettx"`：基于Dunnett分布来校正，比`mvt`方法更快
+
+* `"mvt"`：基于多元t分布来校正p值。因为采用蒙特卡洛方法有一定随机性。可以固定一个随机种子来实现确定的结果（`set.seed()`）。计算开销较大，尤其在比较数量多时十分明显。
+
+* `"none"`：不对p值做校正。
+
+在使用`by`参数后，结果会按照指定的因子分组展示，这时，统计检验也会按照分组进行，这种情况下，分组前后的统计检验量会有变化:
+
+
+```{r by_exp, echo = T}
+pigs.rg <- ref_grid(pigs.lm)
+test(pigs.rg, null = log(40), side = ">", 
+     type = "response", adjust = "sidak")
+```
+
+
+```{r by_exp2, echo = T}
+test(pigs.rg, null = log(40), side = ">", 
+     type = "response", adjust = "sidak", by = "percent")
+```
+
+可以看到，分组前后的统计量出现了较大的差异，分组后的p值比分组前要小。
