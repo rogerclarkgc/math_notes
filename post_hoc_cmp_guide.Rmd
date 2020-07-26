@@ -474,3 +474,357 @@ test(pigs.rg, null = log(40), side = ">",
 ```
 
 可以看到，分组前后的统计量出现了较大的差异，分组后的p值比分组前要小。
+
+# 交互效应的分析
+
+## 因子变量的交互效应
+
+为了演示，本节引入一个新的数据集`auto.noise`，该数据集来自一个完全组合均衡的实验设计，综合考虑汽车大小（3层次）、尾气净化器（2层次）、测量位置（2层次）对汽车行驶噪声的影响，每个实验条件有3个重复。所以一共有$3\times2\times2\times3 = 36$个观测：
+
+```{r auto_noise_exp}
+knitr::kable(head(auto.noise, 5))
+
+with(auto.noise, table(size, type, side))
+```
+
+我们首先建立一个包含3因子交互效应的方差模型，考察那些组合的交互效应较强。
+
+```{r auto_noise_anova, echo = T}
+noise.lm <- lm(noise ~ size * type * side, data = auto.noise)
+# 均衡的实验设计可以使用I型方差分析
+anova(noise.lm)
+```
+
+通过方差分析可以看到，`size`与`side`，`size`与`type`之间存在很强的双因子交互效应，三个因子之间也存在强交互效应。
+
+当模型存在强交互效应时，后验分析必需要谨慎，只有正确的建立模型才能进行有效的后验分析。这时一个典型的错误就是忽略交互项，直接估计某个因子方向的边际均值，并尝试比较它们：
+
+```{r not_good_inter, echo = T}
+# 错误示范!
+emmeans(noise.lm, pairwise ~ size)
+```
+
+可以看到，`emmeans`给出了提示，认为此时的分析可能不合适。根据此分析结果，会得出中型车的噪声大于小型车和大型车的结论。对于存在交互效应的模型，首先最好先将模型可视化，直接观察交互效应：
+
+```{r inter_exp1, echo = T}
+emmip(noise.lm, type ~ size | side) + my_theme
+```
+
+可以看到，中型车并非总是有最大噪声，在催化器为`Octel`时，中型车的噪声似乎就小于小型车。所以，我们为了避免这种不一致性，将多重比较按照催化器的种类分别进行：
+
+```{r inter_exp2, echo = T}
+emm_s.t <- emmeans(noise.lm, pairwise ~ size | type)
+emm_s.t
+```
+
+可以看到，此时的结果和图像一致，在催化器为`Std`时，中型车噪声最大，而对于催化器为`Octel`的车，中型车和小型车的噪声差别不大
+
+## `simple`参数的作用
+
+使用`contrast()`和`pairs()`对包含交互效应的模型进行处理时，可以使用`simple`参数指定分组：
+
+```{r simple_exp1, echo = T}
+# 计算12种实验条件的cell mean
+noise.emm <- emmeans(noise.lm, ~ size * side * type)
+# 计算size变量的成对比较，但按照side和type因子组合来分组
+pairs(noise.emm, simple = "size")
+```
+
+上述代码等价于：`pairs(noise.emm, by = c("side", "type"))`。`simple`变量还可接受多个变量组成的列表，如`pairs(noise.emm, simple = list("size", c("side", "type")))`返回两类比较，第一类是比较`side`和`type`因子组合下的`size`的多重比较，第二类是在`size`分组下的`side*type`因子组合间的比较（`side`和`type`各有两个层次，所以有$2\times2=4$种组合，从四种组合中抽出两个进行比较，共有$C_4^2=6$种比较）。
+
+当想要比较交互效应模型中所有主效应时，可以使得`simple = "each"`参数，这等价于`simple = list("size", "side", "type")`这时，`pairs()`或`contrast()`会分别按照剩余因子的组合来分别比较主效应。另外，使用`combine=T`会将所有比较按照一族进行，导致比较数增多，在校正p值时可能会导致p值增大：
+
+```{r simple_exp2, echo = T}
+knitr::kable(pairs(noise.emm, simple = "each", combine = T, adjust = "Tukey"))
+```
+
+上表中，`.`标记的为进行比较的因子，当`combine=F`时，则会输出24个独立的多重比较，此时p值的校正也是独立进行的。
+
+## `joint_test()`函数
+
+`emmeans`包提供一个`joint_test()`函数来对交互效应模型进行三型方差分析，只需要对一个模型对象使用就可：
+
+```{r joint_test1, echo = T}
+joint_tests(noise.lm)
+```
+
+`joint_test`可以使用`by`参数，使得方差分析按分组进行：
+
+```{r joint_test2, echo = T}
+joint_tests(noise.lm, by = "side")
+```
+
+## 带协变量的交互效应
+
+当一个数值型协变量与一个因子间存在交互效应时，我们可能不关心边际均值，相反，我们可能会关注协变量系数，也就是斜率的差异。这里使用`fiber`数据集作为例子。该数据集来自一个纤维强度测定实验，测定了三种机器生产的纤维在不同直径下的强度，数据集一共15个观测，每种纤维测定了5个不同直径下的强度数据：
+
+```{r fiber_dis}
+knitr::kable(fiber)
+```
+
+首先建立一个交互效应模型：
+
+```{r fiber_inter1, echo = T}
+fiber.lm <- lm(strength ~ diameter * machine, data = fiber)
+```
+
+每个种纤维都分别建立线性模型，现在用`emtrends()`函数来比较协变量的斜率差异。
+
+```{r fiber_inter2, echo = T}
+emtrends(fiber.lm, pairwise ~ machine, var = "diameter")
+```
+
+`emtrends`函数和`emmeans`函数类似，第二个位置的参数`spec`负责接受一个因子或表达式，用于描述边际均值的方向或比较的形式。第三个参数`var`为一个数值型标量的名字，这个变量要求与`spec`参数的输入变量有交互效应。
+
+协变量交互效应模型同样也可以用`emmip`函数可视化：
+
+```{r fiber_inter3, echo = T}
+emmip(fiber.lm, machine ~ diameter, cov.reduce = range) + my_theme
+```
+
+这里使用了`cove.reduce = range`用于传递给`ref_grid()`，默认情况下`ref_grid`会将数值型变量缩减成均值，因此我们使用`range()`函数用数值型的最值区间来覆盖默认行为。
+
+# 处理杂乱的数据
+
+## 基于观测的实验数据
+
+在进行实验时，我们一般先进行实验设计，通过控制实验条件来获取观测数均衡、效应关系明确的数据。但在一些原位观测实验中，往往难以控制效应的层次、效应之间的关系和观测数量，因此这时获得的数据往往非均衡且存在纠缠的效应关系，为了分析这一类实验数据，有必要明确数据处理方法。
+
+这里先用一个实例来了解处理方法，`nutrition`数据集是一个研究低收入人群营养水平得分的观察，研究共考虑了三个影响因子：种族`race`，年龄`age`和是否接受食物券`group`。响应变量则为`gain`，对应的为接受营养学教育后的打分。
+
+```{r nutrition_display}
+knitr::kable(head(nutrition, 5))
+with(nutrition, table(race, group, age))
+```
+
+通过观察观测数计数表可以对这个数据集的质量给出一个评价，首先，如果是一个完全实验设计，一共应该有$3 \times 2 \times 4 = 24$种实验条件，但从计数表来看，有不少的实验条件是缺失的。另外，各个观测条件下，实验数据也严重不均衡，`Hispanic`族裔的观测数据十分少，`White`族裔的观测数据则较多。总体上，这是一个非均衡不完全的实验数据，可能会给后续分析造成一些麻烦。
+
+我们首先初步建立一个包括所有因子和其交互项的全线性模型来考察总体的效应大小和交互效应程度：
+
+```{r nutri_full, echo = T}
+# 对于非均衡的实验设计，采用二型或者三型方差分析
+nutr.lm <- lm(gain ~ (age + group + race)^2, data = nutrition)
+car::Anova(nutr.lm)
+```
+
+从方差表上来看`group:race`的平方和达到113.70，p值为0.1424，有较大可能存在交互效应。来看看在这个交互效应方向的边际均值：
+
+```{r nutri_emm1, echo = T}
+emmeans(nutr.lm, ~ group * race)
+```
+
+可以看到，`Hispanic`边际均值缺失，这是因为部分实验条件的数据缺失：
+
+```{r nutri_emm2, echo = T}
+with(nutrition, table(race, age))
+```
+
+可以看到`Hispanic`在年龄组1，2，4的观测数量为0，在计算边际均值时，这几个年龄组的数据无法给出，这会导致总体均值就为`NA`。所以，现在的问题是，如果不补充实验数据，我们是无法继续进行分析的。
+
+如果实在无法补充数据，我们只能去掉部分实验数据，可以去掉`Hispanic`这一因子层次下的实验数据，或者在年龄为3这一层次下进行分析：
+
+```{r nutri_emm3, echo = T}
+summary(emmeans(nutr.lm, pairwise ~ group | race, at = list(age = "3")), 
+        by = NULL, infer = c(T, T))
+```
+
+从以上的分析能得出一些结果，首先，接受营养学教育对白人和黑人族裔都有好处，其中接受对接受了食物券的人群好处更大，但我们难以对西班牙裔人群做出类似结论，因为数据实在太少。
+
+## 处理中介协变量的问题 （Mediating covariates）
+
+下面用`framing`数据集来作为演示。该数据来自一个关于对待移民态度的实验，实验对象有机会有关移民的议会发送反对增加移民人数的意见，在给出意见前，对象被分成两组，一组观看一则拉丁裔移民的负面报道(`treat = 1`)，另一组不观看，然后记录这两组对象是否给移民议会发送反对意见。实验还测量了对象观看报告后的且情感变化`emo`，该变量为数值型。
+
+```{r framing_data}
+framing <- mediation::framing
+knitr::kable(framing[1:5, c("cong_mesg", "age", "income",
+                            "educ","emo", "gender", "treat")])
+```
+
+我们只展示了部分用于建立模型的变量，这些变量种`cong_msg`为响应变量，代表是否发送反对移民的意见，`age`、`income`、`emo`为协变量，其他的为因子型变量。对于二分型响应变量，我们采用logistic回归：
+
+```{r framing_logis, echo = T}
+levels(framing$educ) <- c("NA", "Ref", "< HS", "HS", "> HS", "Coll +")
+framing.glm <- glm(cong_mesg ~ age + income + educ + emo + gender * factor(treat), 
+                   family = binomial, data = framing)
+```
+
+我们首先按照`emmeans`的默认设置，即将协变量按照均值处理，所有的预测值会按照协变量的均值给出：
+
+```{r framing_inter1, echo = T, fig.width = 6}
+emmip(framing.glm, treat ~ educ | gender, type = "response") + my_theme
+```
+
+
+从这张图我们能看出一些信息，有意思的一点是，根据模型的预测，`treat`变量在男性和女性间有相反的效果，并且我们还看出，教育程度对是否发送反对意见的影响是非线性单调的，当教育程度到`Coll +`时，投反对意见的可能性反而大大增加。
+
+虽然上面的图标的一些信息很有意义，但我们仍然忽略了此实验中协变量的复杂性。`emo`变量是在实验对象观看负面消息后的情绪反应，也就是说该变量必然会受到对象自身的属性以及实验处理的影响。我们需要在交互效应分析中考虑到这一点。所以我们需要让`emo`在`ref_grid`对象中依赖于其他变量来平均：
+
+```{r framing_inter2, echo = T, fig.width=6}
+emmip(framing.glm, treat ~ educ | gender, type = "response",
+      cov.reduce = emo ~ treat*gender + age + educ + income) + 
+  my_theme
+```
+
+可以看到，当我们将`emo`按照其他因子的组合平均后，图像有了很大的变化，当男性看到有关移民的负面消息后，会更倾向于发送反对信息，而女性则不太受到负面消息的影响。
+
+当有多个于其他变量有关的变量时，可以采用如下方法让`emmeans`按照用户指定的关系对协变量做边际平均`emmeans(...cov.reduce = list(x1 ~ trt, x2 ~ trt + x1, x3 ~ trt + x1 + x2))`。
+
+## 固定效应的嵌套
+
+嵌套的因子常常属于随机效应，如进行某种实验，将实验对象随机分配处理组，那么可以说实验对象嵌套在处理组内部。但有些时，固定效应间也存在嵌套，下面用一个例子来说明。这个数据来自一个使用不同药物治疗牛的疾病的实验。实验采用两类治疗手段，注射和口服，有两种药物属于注射给yao，另外三种药物属于口服给药(只展示前6行)
+
+```{r cows_exp, echo = F}
+cows <- data.frame (route = factor(rep(c("injection", "oral"), c(5, 9))),
+                    drug = factor(rep(c("Bovineumab", "Charloisazepam","Angustatin", "Herefordmycin", "Mollycoddle"), 
+                                      c(3,2, 4,2,3))),
+                    resp = c(34, 35, 34, 44, 43, 36, 33, 36, 32, 26, 25, 25, 24, 24)
+)
+```
+
+```{r cows_exp2, echo = F}
+knitr::kable(head(cows))
+with(cows, table(route, drug))
+```
+
+从数据表可以看出，本实验中`drug`变量嵌套在`route`变量中。我们首先建立一个线性模型：
+
+```{r cows_lm1, echo = T}
+cows.lm <- lm(resp ~ route + drug, data = cows)
+cows.rg <- ref_grid(cows.lm)
+cows.rg
+```
+
+可以看到，`emmeans`包也提示因子间存在嵌套，我们计算`route`方向的边际均值：
+
+```{r cows_lm2, echo = T}
+route.emm <- emmeans(cows.rg, "route")
+route.emm
+```
+
+计算`drug`方向的边际均值：
+
+```{r cows_lm3, echo = T}
+drug.emm <- emmeans(cows.rg, "drug")
+drug.emm
+```
+
+进行比较`route`间的比较：
+
+```{r cows_contrast1, echo = T}
+pairs(route.emm, reverse = T)
+```
+
+进行`drug`间比较，按照`route`分组：
+
+```{r cows_contrast2, echo = T}
+pairs(drug.emm, by = "route", reverse = T)
+```
+
+### 图像表示嵌套
+
+默认的`emmip`在展示嵌套时存在x轴标度层次过多的问题：
+
+```{r cow_ip1, echo = T, fig.width = 6, fig.height=3}
+emmip(cows.rg, ~ drug|route) + my_theme
+```
+
+可以看到，物种药物在两个子图的x轴都有展示，显然`drug`嵌套在`route`中，两个子图应该只展示一类药物的数据。所幸，`emmip`返回`ggplot`对象，很容易就能修改，我们通过手动指定分面，并改变x轴的标度来改善图像：
+
+```{r cow_ip2, echo = T, fig.height = 3}
+emmip(cows.rg, ~ drug) + facet_wrap(~route, scales = "free_x") + 
+  my_theme + theme(axis.text.x = element_text(size = 7))
+```
+
+`facet_wrap()`是为`ggplot`对象指定一个分面图层的语句，`scales="free_x"`参数让x轴的标度不固定且随子图变化
+
+# 用`emmeans`做预测
+
+`emmeans`被设计用来做后验比较，但作者提供了一些不太完善的功能用于做模型的预测。
+
+## 预测的区间
+
+要给出预测的区间需要知道模型中估计量的标准差，在R中许多模型都可以通过`sigma(object)`来获取模型的标准差，但有些模型如线性混合模型`lme4`对象不会返回正确的模型标准差，这时我们需要手动计算，下面以一个线性混合模型为例子。该例子使用`feedlot`数据集，研究了不同食谱对牛重量的影响，实验开始时记录下牛的初始体重，养殖结束后记录下宰杀体重，牛来自不同的牛群，该变量作为随机效应（随机的截距），由于牛的初始体重不同，首先中心化牛的体重，再建立混合模型。
+
+```{r feedlot1, echo = T}
+library(lme4)
+feedlot <- feedlot %>% mutate(adj.ewt = ewt - predict(lm(ewt ~ herd)))
+feedlot.lmer <- lmer(swt ~ adj.ewt + diet + (1|herd), data = feedlot)
+feedlot.rg <- ref_grid(feedlot.lmer, at = list(adj.ewt = 0))
+summary(feedlot.rg)
+```
+
+默认情况下，可以通过`feedlot.rg@misc$sigma`来查看模型残差的标准差：
+
+```{r feedlot2, echo = T}
+feedlot.rg@misc$sigma
+```
+
+但在这个随机模型中，随机效应`herd`显然会影响`swt`的大小，因此预测时必需考虑这一部分的标准差，我们使用`lme4::VarCorr`来获取这一部分的标准差：
+
+```{r feedlot3, echo = T}
+lme4::VarCorr(feedlot.lmer)
+```
+
+有了这两部分标准差，我们可以计算出模型的预测区间：
+
+```{r feedlot4, echo = T}
+feedlot.rg <- update(feedlot.rg, sigma = sqrt(77.087^2 + 57.832^2))
+predict(feedlot.rg, interval = "prediction")
+# PIs = TRUE, 显示预测区间
+plot(feedlot.rg, PIs = TRUE) + my_theme
+```
+
+上图中，深蓝色为置信区间，外部的浅色为模型的预测区间
+
+### 预测某一区间的值
+
+上面的模型中，我们把`herd`当成一个随机效应，但有时我们想关注某个特定区间的预测值，我们重新建立一个线性模型，把`herd`看成固定效应:
+
+```{r feedlot5, echo = T}
+feedlot.lm <- lm(swt ~ adj.ewt + diet + herd, data = feedlot)
+```
+
+我们重点关注牛群9和牛群19的预测值，只需要用到`at`参数指定`ref_grid`的区间
+
+```{r feedlot6, echo = T}
+newrg <- ref_grid(feedlot.lm, at = list(adj.ewt = 0, herd = c("9", "19")))
+predict(newrg, interval = "prediction", by = "herd")
+```
+
+# 随机模型
+
+## 线性混合模型
+
+`emmeans`支持`lme4`和`nlme`建立的混合模型，下面用一个例子来说明。本例子采用一个田间实验数据集`Oats`。该实验为随机区组的均衡实验，实验中一个划出6块田地，每块田地均随机种上等量的四种燕麦，每种燕麦都随机分成四个小组，梯度给予不同浓度的氮肥，最后测定其产量。
+
+```{r oats_exp}
+Oats <- nlme::Oats
+with(Oats, table(Variety, Block))
+```
+
+我们首先建立包含随机截距项的混合模型：
+
+```{r oats_lmer1, echo = T}
+Oats.lmer <- lme4::lmer(yield ~ Variety + factor(nitro) + (1|Block/Variety),
+                        data = Oats,
+                        subset = -c(1, 2, 3 ,5, 8, 13, 21, 34, 55))
+```
+
+我们建立了一个包含嵌套关系的混合效应模型，`(1|Block/Variety)`表示`Variety`嵌套在`Block`中，该表达式等价于`(1|Block) + (1|Block:Variety)`。
+
+计算边际均值的方法和其他模型一样，同样使用`emmeans()`函数：
+
+```{r oats_lmer1, echo = T}
+emmeans(Oats.lmer, "nitro")
+```
+
+线性混合模型的自由度估计默认采用`pbkrtest`包中的Kenward-Roger方法，也可以通过修改`lmer.df`参数来使用其他估计方法，包括`lmer.df = "satterthwaite"`，`lmer.df = "asymptotic"`。
+
+同样的，多重比较也和线性模型采用一样的方法：
+
+```{r oats_lmer2, echo = T}
+emmeans(Oats.lmer, pairwise ~ Variety)
+```
+
+# 变换与连接函数
+
