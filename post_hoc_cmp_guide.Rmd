@@ -814,7 +814,7 @@ Oats.lmer <- lme4::lmer(yield ~ Variety + factor(nitro) + (1|Block/Variety),
 
 计算边际均值的方法和其他模型一样，同样使用`emmeans()`函数：
 
-```{r oats_lmer1, echo = T}
+```{r oats_lmer2, echo = T}
 emmeans(Oats.lmer, "nitro")
 ```
 
@@ -822,9 +822,9 @@ emmeans(Oats.lmer, "nitro")
 
 同样的，多重比较也和线性模型采用一样的方法：
 
-```{r oats_lmer2, echo = T}
+```{r oats_lmer3, echo = T}
 emmeans(Oats.lmer, pairwise ~ Variety)
 ```
 
-# 变换与连接函数
+
 
