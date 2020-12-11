@@ -1,0 +1,78 @@
+---
+title: "corrplot_and_model_influence"
+author: "rogerclark"
+date: "2020/12/11"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages}
+library(tidyverse)
+library(corrplot)
+```
+
+# combine corrplot and importance of model's parameters.
+
+## example data
+
+```{r exp_data}
+data(mtcars)
+M <- cor(mtcars)
+set.seed(0)
+
+```
+
+## generate upper matrix plot
+
+```{r gen_upper_corr}
+corrplot(M, order = "AOE", type = "upper", tl.pos = "d")
+```
+
+上半角corrplot中，左上第一列元素坐标为(1, max(col))，这里为(1,11)
+右下角的元素坐标为(max(row), 1)，这里为(11, 1),原点(0, 0)在左下角
+
+## 在左侧添加字符
+
+把字符添加第0列的第1到9行 (位于0列1行的无法显示，原因未知)
+
+```{r add_text}
+corrplot(M, order = "AOE", type = "upper", tl.pos = "d")
+text(rep(0, 9), c(1:9), labels = paste("Model", c(1:9), sep = "."))
+```
+
+## 添加连线
+
+目前问题是，右下角连线位置不正确
+
+```{r add_lines}
+
+corrplot(M, order = "AOE", type = "upper", tl.pos = "d")
+text(rep(0, 9), c(1:9), labels = paste("Model", c(1:9), sep = "."))
+# model 2
+segments(x0 = rep(0.5,11), y0 = rep(2, 11),
+         x1 = c(1:11), y1 = c(11:1), col = c(rep("red", 5), rep("black", 6)))
+# model 3
+segments(x0 = rep(0.5,11), y0 = rep(3, 11),
+         x1 = c(1:11), y1 = c(11:1), col = c(rep("red", 5), rep("black", 6)))
+# model 4
+segments(x0 = rep(0.5,11), y0 = rep(4, 11),
+         x1 = c(1:11), y1 = c(11:1), col = c(rep("red", 5), rep("black", 6)))
+# model 5
+segments(x0 = rep(0.5,11), y0 = rep(5, 11),
+         x1 = c(1:11), y1 = c(11:1), col = c(rep("red", 5), rep("black", 6)))
+# model 6
+segments(x0 = rep(0.5,11), y0 = rep(6, 11),
+         x1 = c(1:11), y1 = c(11:1), col = c(rep("red", 5), rep("black", 6)))
+# model 7
+segments(x0 = rep(0.5,11), y0 = rep(7, 11),
+         x1 = c(1:11), y1 = c(11:1), col = c(rep("red", 5), rep("black", 6)))
+# model 8
+segments(x0 = rep(0.5,11), y0 = rep(8, 11),
+         x1 = c(1:11), y1 = c(11:1), col = c(rep("red", 5), rep("black", 6)))
+# model 9
+segments(x0 = rep(0.5,11), y0 = rep(9, 11),
+         x1 = c(1:11), y1 = c(11:1), col = c(rep("red", 5), rep("black", 6)))
+```
