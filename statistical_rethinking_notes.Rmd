@@ -1,0 +1,523 @@
+---
+title: "Statistical rethinking：读书笔记"
+author:
+  - rogerclark
+documentclass: ctexart
+geometry: margin=3cm
+output:
+  rticles::ctex:
+    fig_caption: yes
+    number_sections: yes
+    toc: yes
+classoption: "hyperref,"
+---
+
+```{r set, echo = F, warning = F, message = F}
+knitr::opts_chunk$set(echo = F, eval = T, warning = T, message = F, fig.width = 5, fig.height = 3)
+library(tidyverse)
+library(latex2exp)
+library(grid)
+library(rethinking)
+```
+
+```{r my_functions, echo = F}
+my_theme <- theme_bw() + theme(axis.title = element_text(size = 15),
+                             axis.text = element_text(size = 10),
+                             strip.text = element_text(size = 10),
+                             legend.text = element_text(size = 10))
+
+vplayout <- function(x,y){
+  viewport(layout.pos.row = x, layout.pos.col = y)
+}
+```
+
+# 准备：安装rethinking包
+
+McElreath大神专门为这本书写了`rethinking`包用于教学，该包基于`rstan`包写成，所以在安装这个包之前需要做好前置准备，万事开头难，首先需要配置好运行环境：
+
+## 配置c++编译工具链，更新R版本
+
+本笔记写于2020年7月，此时R经历一个大版本更新，跨入4.x.x世代，但`rstan`仍然基于R3.6.3，所以需要先更新R版本，同时配置c++编译工具链Rtools，两者均可在cran下载：[R3.6.4](https://cloud.r-project.org/bin/windows/base/old/3.6.3/R-3.6.3-win.exe)， [Rtools35](https://cran.r-project.org/bin/windows/Rtools/Rtools35.exe)。
+
+安装完成后，需要将Rtools所在的位置写入系统变量`path`，这样Rstudio才能找到这个编译工具。
+
+安装新版本完新版本R后需要把老版本的R的程序包复制到新版本中，只需要把`~/R_old/library`中的文件复制到新的`library`文件夹，不要覆盖R提供的基本包，复制完后，在控制台运行`update.packages(checkBuilt=TRUE, ask=FALSE)`更新所有程序包
+
+## 安装`rstan`
+
+`rstan`是贝叶斯建模语言`stan`的R语言接口，该语言基于c++，安装需要进行一些编译上的配置。
+
+首先，检查rtools是否配置成功：
+
+```{r check, eval = F, echo = T}
+pkgbuild::has_build_tools(debug = T)
+```
+
+正确配置会输出`TRUE`。
+
+然后在R控制台输入如下代码，重新定义编译时使用的c++版本和优化参数：
+
+
+```{r cplusvar, eval = F, echo = T}
+dotR <- file.path(Sys.getenv("HOME"), ".R")
+if (!file.exists(dotR)) dir.create(dotR)
+M <- file.path(dotR, "Makevars.win")
+if (!file.exists(M)) file.create(M)
+cat("\nCXX14FLAGS=-O3 -march=corei7 -mtune=corei7",
+    "CXX14 = $(BINPREF)g++ -m$(WIN) -std=c++1y",
+    "CXX11FLAGS=-O3 -march=corei7 -mtune=corei7",
+    file = M, sep = "\n", append = TRUE)
+```
+
+最后我们安装`rstan`
+
+```{r install_rstan, eval = F, echo = T}
+# 清除老版本
+remove.packages("rstan")
+if (file.exists(".RData")) file.remove(".RData")
+# 从源码编译
+install.packages("rstan", type = "source")
+```
+
+安装过程会编译源码，如果报出`non-zero exit`之类错误，说明有些依赖的包没安装，按照报错安装即可。
+
+## 安装`rethinking`
+
+`rethinking`包没有托管在R的官方仓库CRAN，而是托管在github上，我们通过`devtools`包安装它
+
+```{r ins_dev, eval = F, echo = T}
+install.packages("devtools")
+```
+
+安装完成后再运行：
+
+```{r install_rethinking, eval = F, echo = T}
+install.packages(c("coda","mvtnorm"))
+library(devtools)
+devtools::install_github("rmcelreath/rethinking",ref="Experimental")
+```
+
+安装程序自动检查依赖并安装相关包，如果报错，需要自行手动安装依赖包。
+
+# The Golem of prague
+
+这一节中McElreath提出了“Statistical golems”这一概念。“golems”即泥土魔像，相传是由魔法和泥土做成的无生命体巨人，它威力巨大，拥有摧毁城墙的力量，然而，魔像却很容易失去控制，变得不听从命令并攻击人类，许多不聪明的魔法师死于失控魔像之手。
+
+McElreath认为如今流行的许多“统计检验”就是一种“Statistical golems”，它们虽然威力巨大，但往往使用条件十分苛刻，许多研究者并不理解这些方法背后的原理，只是机械的套用统计方法，这造成了这些方法的滥用，而滥用统计方法将会对科学推断造成灾难性的影响。
+
+McElreath这样批评：
+
+>*For some, the toolbox of pre-manufactured golems is all they will ever need. 
+Provided they stay within well-tested contexts, using only a few diﬀerent 
+procedures in appropriate tasks, a lot of good science can be completed. 
+This is similar to how plumbers can do a lot of useful work without knowing 
+much about ﬂuid dynamics. Serious trouble begins when scholars move on to 
+conducting innovative research, pushing the boundaries of their specialties. 
+It’s as if we got our hydraulic engineers by promoting plumbers*
+
+显然，他认为过度依赖统计检验是不够的，现实世界的科学问题往往没有明确的边界可清晰的划分标准。McElreath接着认为，基于证伪零假设命题的统计推断模型是无法归纳、解释、分析现实问题的。他主要提出两个观点：
+
+1. 零假设并非统计模型：零假设与模型的关系十分复杂，并非一一对应，许多模型对应同一零假设，而许多零假设也对应同一模型，那么对某个零假设的证伪不能对应用单一的统计模型来推断
+
+2. 观测的误差：虽然大多数统计模型很好的描述误差，但总有一些误差无法被注意，往往不可察觉的误差或错误会导致一个假设被证伪。二元对立的假设检验体系往往不可容忍这种误差。
+
+最后，McElreath认为，基于贝叶斯分析的统计模型能很好的避免证伪主义在许多科学问题下失效的窘境，在贝叶斯分析的语境下，统计推断不再二分对立，我们用概率描述某个假设出现的可能性，于此同时，贝叶斯分析将观测误差视为信息的一种属性，这能更好的对统计模型的参数进行不确定性的估计。
+
+# Small worlds and large worlds
+
+## “小世界”的例子
+
+这一节中，McElreath通过一个例子来演示如何一步一步使用贝叶斯概率论来建立一个统计模型。这个例子如下：
+
+假设某人手中有一个地球仪模型，他想知道这个地球仪上水体的覆盖面积，于是他做了一个实验，用右手拿着模型，抛向空中，让球在空中自由旋转，接住地球仪，记录右手食指覆盖的区域是水体还是陆地。把陆地记成L，把水体记成W。他一共抛了9次球，其结果的序列为：WLWWWLWLW。
+
+建立贝叶斯模型首先遵循着如下三个步骤：
+
+1. 描述数据：用数学语言描述实验，以及数据是怎么通过这个实验产生的
+
+2. 更新模型：用实验数据输入模型，更新模型参数
+
+3. 评估模型：评估模型的可靠性
+
+### 描述数据
+
+对于抛球实验，我们给出如下数学定义：
+
+1. 地球仪上水体的真实覆盖比例为$p$
+2. 显然，每次抛球事件，产生观测为W的概率为$p$，产生观测为L的概率为$1-p$
+3. 理想下，每次抛球事件是独立事件
+
+有了如上描述，我们首先可以明确的是，水体的覆盖比例$p$是需要我们通过统计模型估计的*参数*，我们的贝叶斯模型也是建立在估计这个参数的目的上的。
+
+### 贝叶斯模型的更新
+
+贝叶斯模型是基于数据的变化来更新参数的，从图1中我们用虚线代表一开始的$p$的概率密度，实现代表更新后的$p$的概率密度。一开始，假设$p$的估计是一个均匀分布，即各个值的概率均等，加入一个观测W后，$p$值的概率密度马上向1方向倾斜，并且$p=1$有最大的概率，而当加入观测L后，$p$的概率密度图像马上编程驼峰形，在$p=0.5$处有最大概率密度，就这样一步一步加入观测，每次的$p$的分布的更新都是根据前一步的结果和新加入的观测结合而成，知道观测数为9时，$p$的概率密度分布较之一开始有很大的变化，这就是贝叶斯模型逐步更新参数的过程。
+
+### 评估模型
+
+McElreath提出，对于模型的评估，一定要基于两个准测：
+
+1. 模型的对参数估计的精确性不代表模型是否优良。显然，如图1所示，贝叶斯模型在观测数增多时，参数的概率密度图像的峰开始变的尖耸，但这只代表模型对参数估计的精确性高，当模型错误时，足够多的数据仍然可以让模型给出某一参数的“精确”估计，这一点不仅在贝叶斯模型需要注意，在其他模型中也急需清楚认识。
+
+2. 一定要注意数据时如何产生的，在抛球模型中，每次事件均独立，产生W或L的顺序不会影响最终结果，模型中也不会定义顺序对模型的影响。但有些情况，数据出现的顺序应该被考虑，它们可能存在一些关联，这时在建立模型前就需要注意的前提。
+
+![贝叶斯模型对参数的更新](D:/roger/myRproject/baysian_guide/statistical_rethinking/bayesian_update.PNG){height="50%" width="50%"}
+
+
+### 建立模型
+
+基于我们对以上实验的描述，我们可以给出抛球实验的模型，首先$W$和$L$是独立的观测事件，它们还是互斥事件，出现$W$的概率是$p$，那么，在一个序列中，出现$N$次$W$事件是符合二项分布的，所以：
+
+$$W \sim \mathcal{B}(N, p)$$
+
+我们不知道$p$的真实分布，所以先假设它是一个均匀分布的参数，由于$p$本身是概率，其取值为0到1，那么有：
+
+$$p \sim \mathcal{U}(0, 1)$$
+
+## 运行模型
+
+在这一节，开始使用贝叶斯方法来求解模型中的未知参数$p$，贝叶斯方法是基于先验知识和数据来获取未知参数的*后验概率*的，在抛球实验中，先验知识指的是我们对参数$p$为均匀分布的假定，数据即我们通过实验获取的观测序列，而求解的对象即为参数的$p$的后验概率：$\mathrm{Pr}(p|W,L)$。这个后验概率为在给出观测数据后$p$的条件概率。
+
+### 贝叶斯理论
+
+贝叶斯分析是基于贝叶斯理论的，而该理论的核心即贝叶斯公式，贝叶斯公式的推导十分简单：
+
+首先，对于数据$W$，$L$和参数$p$，它们的联合概率有：
+
+$$\mathrm{Pr}(W,L,p) = \mathrm{Pr}(W,L|p)\mathrm{Pr}(p)$$
+
+对于这个公式的解释，McElreath说：
+
+> *This is like saying that the probability of rain and cold on the same day is equal to the probability of rain, when it's cold, times the probability that it's cold*
+
+可以说十分恰当。同样的，这个联合概率也可以这么给出：
+
+$$\mathrm{Pr}(W,L,p) = \mathrm{Pr}(p|W,L)\mathrm{Pr}(W,L)$$
+
+两式相等，易得：
+
+$$\mathrm{Pr}(W,L|p)\mathrm{Pr}(p) = \mathrm{Pr}(p|W,L)\mathrm{Pr}(W,L)$$
+
+这样，我们可以得出参数$p$的后验概率$\mathrm{Pr}(p|W,L)$为：
+
+$$\mathrm{Pr}(p|W,L) = \frac{\mathrm{Pr}(W,L|p)\mathrm{Pr}(p)}{\mathrm{Pr}(W,L)}$$
+
+以上就是贝叶斯公式的推导过程，贝叶斯公式的右边显而易见的分成了三个部分：即$\mathrm{Pr}(W,L|p)$代表在某个参数$p$下出现该数据的概率，$\mathrm{Pr}(p)$为参数$p$的先验概率分布，分母$\mathrm{Pr}(W,L)$代表出现数据的“平均似然性”。可以用如下式子总结：
+
+$$\text{后验概率} = \frac{
+\text{出现数据可能性} \times \text{先验概率} }{\text{数据的平均似然性}}$$
+
+对于“平均似然性”，该项的作用其实是起到一个均一化的作用，这能保证后验概率总和为1，更好的数学定义基于期望的积分：
+
+$$\mathrm{Pr}(W, L) = \mathrm{E}(\mathrm{Pr}(W,L|p)) = \int \mathrm{Pr}(W,L|p) \mathrm{Pr}(p)\mathrm{d}p$$
+
+显然，数学上看，“平均似然性”就是一种平均，是后验概率函数$\mathrm{Pr}(W,L|p)$在$p$方向的平均，所以有人称该项为*边际似然率*（marginal likelihood）
+
+### 实现模型
+
+我们构建了模型，解释了贝叶斯理论，现在需要考虑的就是如何实现这个模型了，我们模型的目的是计算$p$的后验概率$\mathrm{Pr}(p|W,L)$，这个后验概率应该是由一个未知的概率密度函数描述，而贝叶斯公式可以帮助我们计算出某个先验$p$下的概率，如果我们取的$p$值足够多，那么是否可以通过足够多的$p$值的后验概率来代表整个概率密度函数？这个就是我们获得模型求解的一种思路。
+
+本书中介绍了三种是实现这种思路的数值计算方法，分别为：
+
+1. 网格化近似（Grid approximation）
+2. 二次近似（Quadratic approximation）
+3. 马卡洛夫链蒙特卡洛（Markov chain Monte Carlo, MCMC）
+
+下面分别介绍三种数值计算方法。
+
+### 网格化近似（Grid approximation）
+
+网格化近似正如其名字，思路十分简单，对于连续型未知参数$p$，我们知道$p$是一个概率，所以$p \in [0,1]$，如果我们在$[0,1]$内取一系列$p'$，分别计算它们的后验概率，汇总这些结果就可以得到对$p$的后验概率分布的大致认识。显然，$p'$的数量越多，即网格越精细，我们对后验概率分布的估计也越精确。我们可以按照如下步骤写我们的R语言代码：
+
+1. 定义网格，决定$p'$数量，为了方便，我们定义一个等距网格$g$
+2. 计算网格点$p'$的先验概率（$\mathrm{Pr}(p')$）
+3. 计算非标准化的后验概率，即把似然率和先验概率相乘（$\mathrm{Pr}(W,L|p')\mathrm{Pr}(p')$）
+4. 计算所有的非标准化后概率后，把它们加和，得到$p$的边际似然率，拿它除以3中的后验概率即得到网格近似下的后验概率（$\sum_{p'\in g}\mathrm{Pr}(W,L|p')\mathrm{Pr}(p')$）
+
+仍然以抛球实验为例，我们用网格化近似方法估计$p$的后验概率分布：
+
+```{r grid_approx, eval = T, echo = T}
+# 定义参数p的网格
+p_grid <- seq(0, 1, length.out = 20)
+
+#定义参数p的先验概率，为0，1的均匀分布，根据均匀分布的特点，
+#所有点的概率相同，其值为1/(1-0) = 1
+prior <- rep(1, 20)
+
+# 计算每个网格点在参数p'下似然率，此实验中为二项分布
+likelihood <- dbinom(6, size = 9, prob = p_grid)
+
+# 计算非标准化后验概率
+unstd.posterior <- likelihood * prior
+
+# 标准化后验概率
+posterior <- unstd.posterior / sum(unstd.posterior)
+```
+
+我们绘制出通过网格估计得到$p$的后验概率密度函数：
+
+```{r grid_plot, echo = T, fig.cap = "网格近似得到的后验概率密度"}
+grid_post <- data.frame(p_grid = p_grid,
+                        posterior = posterior)
+fig_grid <- grid_post %>% ggplot(aes(x = p_grid, y = posterior)) + 
+  geom_point() + 
+  geom_line() + 
+  ylab("posterior probability") + 
+  xlab("probability of water") + 
+  my_theme
+
+fig_grid
+```
+
+参数$p$的先验概率密度函数是否会对后验概率由明显的影响，我们将$p$的先验概率密度函数分别改成如下两个：
+
+```{r grid_prior, echo = T}
+# 0，1概率密度
+prior2 <- ifelse(p_grid < 0.5, 0, 1)
+# 指数型概率密度
+prior3 <- exp(-5 * abs(p_grid - 0.5))
+```
+
+分别计算这些先验概率下的后验概率，并作图进行比较：
+
+```{r grid_approx2, echo = F, fig.cap = "不同先验下后验概率的比较", fig.height = 2}
+unstd.posterior2 <- likelihood * prior2
+posterior2 <- unstd.posterior2 / sum(unstd.posterior2)
+
+unstd.posterior3 <- likelihood * prior3
+posterior3 <- unstd.posterior3 / sum(unstd.posterior3)
+
+grid_post2 <- data.frame(p_grid = p_grid,
+                        posterior = posterior2)
+grid_post3 <- data.frame(p_grid = p_grid,
+                        posterior = posterior3)
+fig_grid2 <- grid_post2 %>% ggplot(aes(x = p_grid, y = posterior)) + 
+  geom_point() + 
+  geom_line() + 
+  ylab("posterior probability") + 
+  xlab("probability of water") + 
+  my_theme + 
+  xlab("")
+
+grid_post3 <- data.frame(p_grid = p_grid,
+                        posterior = posterior3)
+fig_grid3 <- grid_post3 %>% ggplot(aes(x = p_grid, y = posterior)) + 
+  geom_point() + 
+  geom_line() + 
+  ylab("posterior probability") + 
+  xlab("probability of water") + 
+  my_theme + 
+  xlab("")
+
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(1, 3)))
+print(fig_grid + theme(axis.text = element_blank()) + 
+        xlab(""), vp = vplayout(1, 1))
+print(fig_grid2+ theme(axis.text = element_blank()), vp = vplayout(1, 2))
+print(fig_grid3+ theme(axis.text = element_blank()), vp = vplayout(1, 3))
+
+```
+
+从左到右分别均匀分布先验，01函数先验，指数函数先验得到的后验概率密度函数，可以看到三者之间形状存在较大的不同，由此可见先验函数的不同会影响贝叶斯估计的后验概率。
+
+### 二次近似（Quadratic approximation）
+
+对于抛球问题，我们的未知参数只有一个，即出现水体的概率$p$，在参数较少时，使用网格化近似能取得较好的成果，但如果我们的问题有3个未知参数，并且我们仍然需要较高的估计精度，我们对每个参数取100个网格点，那么，需要做$100^3 = 1000000$次估计，这已大大高于一个参数的情况了，换而言之，网格化近似在多参数问题上，计算量是急速增加的，对于$n$个参数的问题，我们的网格数量为$k$，那么问题的复杂度为$n^k$，呈指数增加趋势，这无疑是低效的算法。
+在对于连续变量的情况，后验概率密度函数的峰值附件可以近似认为是高斯分布的，高斯分布尤为简单，只需要两个参数即均值和方差就能描述清楚，用高斯分布逼近我们的后验概率密度函数是个办法，而高斯分布的对数形式类似于二次曲线，因此该方法被称之为二次近似。二次近似方法十分高效，要优于网格近似和MCMC。它的算法有两个步骤：
+
+1. 找到后验概率密度函数的峰值点，这一般可以通过函数优化算法得到
+
+2. 估计峰值点附近的曲率，这能通过一些二次估计算法来实现
+
+我们首先不关注实现该算法的技术细节，而是通过`rethinking`包来实现这个算法
+
+```{r quadratic_approx, echo = T, eval = T}
+globe.qa <- quap(
+  alist(
+    W ~ dbinom(W+L, p),# W为二项分布，似然率
+    p ~ dunif(0, 1) # p的先验均匀分布
+  ),
+  data = list(W = 6, L = 3)
+)
+precis(globe.qa)
+```
+
+该结果表明，后验概率分布的均值为0.67，也就是峰值，而标准差为0.16，后两项分别为该后验分布的5.5%和94.5%分位数。总体上，可以这样描述结果：假定后验分布为高斯分布函数，其最值点在0.67（均值点），其标准差为0.16。当样本数量较低时，二次近似方法的精度较低，随着样本数量的增加，估计的精度逐渐上升，理论上，当样本数量趋于无穷时，对参数的估计的误差趋于0。这也时为何许多基于二次近似的统计模型需要大量样本（图4）。
+
+![二次近似的精确性](D:/roger/myRproject/baysian_guide/statistical_rethinking/quadratic_approx.PNG){height="30%"}
+
+### 马尔可夫链蒙特卡洛
+
+网格化近似和二次近似对于多层次模型（multilevel models），如混合效应模型的估计往往差强人意，这些模型参数多，结构复杂，也难以写出其后验概率的函数形式，因此我们需要一种新的方法。
+
+马尔可夫链蒙特卡洛方法就能有效的估计复杂模型的参数，它早在1990年前就被提出，但由于计算力的缺乏没有受到重视，如今计算机的发展今非昔比，MCMC方法被大量运用。
+
+我们在后文详细介绍MCMC方法的实现算法：Metropolis算法，下面是这个算法在抛球实验中的例子：
+
+```{r mcmc_approx, echo = T, echo = T}
+# Markov chain长度
+n_samples <- 1000
+p <- rep(NA, n_samples)
+# 定义起始链
+p[1] <- 0.5
+W <- 6
+L <- 3
+for (i in 2:n_samples){
+  # 基于Markov chain抽取一个新的p
+  p_new <- rnorm(1, p[i-1], 0.1)
+  # 归一化概率到0，1
+  if (p_new < 0) p_new <- abs(p_new)
+  if (p_new > 1) p_new <- 2 - p_new
+  # 计算前一个链的似然率
+  q0 <- dbinom(W, W+L, p[i-1])
+  # 计算当前链的似然率
+  q1 <- dbinom(W, W+L, p_new)
+  # 进行似然率的比较，如果新似然率大于旧似然率，那么接受p_new
+  # 如果新似然率小于旧似然率，仍然有q1/q0的概率接受p_new，有1-q1/q0的概率拒绝
+  p[i] <- ifelse(runif(1) < q1/q0, p_new, p[i-1])
+}
+```
+
+我们分别做出p的真实分布和MCMC得出的分布的概率密度，它们其实较为相似：
+
+```{r cmp_mcmc, echo = T, fig.pos="B", fig.height=1.5}
+dens(p, xlim = c(0, 1))
+curve(dbeta(x, W+1, L+1), lty=2, add = T)
+```
+
+
+
+
+# Sampling the Imaginary
+
+这一章主要讨论取样的方法，McElreath认为，相比直接考虑后验概率的分布形式，通过取样来了解后验分布是更直观的方法，尤其是当我们考虑的问题十分复杂，模型参数众多时，得出后验分布的数学形式十分困难，这时利用取样方法考察后验分布更为直观简单且高效。
+
+另外，McElreath通过一个简单的例子论证了：科研研究中假设的重要性，故事是这样说的：
+
+当一个假设为真，且通过某个实验能有0.95的概率得出到这个假设为真的结论，这称之为实验的功效，即有$\mathrm{Pr}(pos|true) = 0.95$，反过来，如果假设为假，那么这个实验得出假设为真的概率为$\mathrm{Pr}(pos|false) = 0.05$。即假阳性概率。最后，有1%的概率这个假设为真，显然，根据贝叶斯理论，当得出实验得出阳性结果时，假设为真实的概率是：
+
+$$\mathrm{Pr}(true|pos) = \frac{\mathrm{Pr}(pos|true) \mathrm{Pr}(true)}{\mathrm{Pr}(pos)} = \frac{\mathrm{Pr}(pos|true) \mathrm{Pr}(true)}{\mathrm{Pr}(pos|true)\mathrm{Pr}(true) + \mathrm{Pr}(pos|false)\mathrm{Pr}(false)}$$
+
+我们代入上文中的数据，可以看到，即使我们的实验有阳性结果，只有16%可能性假设为真，因为假设为真的先验实在太低，仅为1%。所以，在设计时，对假设的考虑十分重要。
+
+## Sampling from a grid-approximate posterior
+
+回到前面网格化近似的例子，我们首先生成一个网格大小为1000的估计：
+
+```{r grid1000, echo = T, eval = T}
+p_grid <- seq(0, 1, length.out = 1000)
+prob_p <- rep(1, 1000)
+prob_data <- dbinom(6, size = 9, prob = p_grid)
+posterior <- prob_data * prob_p
+posterior <- posterior / sum(posterior)
+```
+
+现在我们有了1000个网格点的后验概率`posterior`，我们现在按照这个后验概率来有放回的从$p_grid$中抽取10000个样本：
+
+```{r sample_grid, echo = T}
+set.seed(1234)
+samples <- sample(p_grid, prob = posterior, size = 1e4, replace = T)
+```
+
+画出这个抽样的密度图，可以看到它基本和我们通过网格化近似得到的图像十分接近
+
+```{r sample_dens, fig.height=1.5, fig.pos='h'}
+dens(samples)
+```
+
+## Sampling to summarize
+
+在获取了后验概率的分布后，往往我们需要对这个分布做一些总结性的推断，这些推断可分为如下几类：对参数区间的后验概率的估计，对概率区间下的参数区间的估计，点估计。
+
+### 估计参数区间的后验概率
+
+仍然回到抛球问题，现在我们想知道对于$p<0.5$的参数，它们的后验概率是多少。如果基于网格化近似的结果：
+
+```{r parameter_intervals, echo = T}
+sum(posterior[p_grid < 0.5])
+```
+
+显然有17%的值小于0.5。对于抽样得到的结果，我们这样计算：
+
+```{r samples_intervals, echo = T}
+sum(samples < 0.5)/1e4
+```
+
+两者十分接近
+
+### 估计某个概率区间下的参数区间
+
+这个问题其实就是估计分位数的问题，分位数最常用的就是置信区间，比如，输出样本中左尾概率为0.8的分位数：
+
+```{r samples_quantile, echo = T}
+quantile(samples, 0.8)
+```
+
+置信区间有时很有用（PI），但对于那些分布严重偏斜的后验分布，该区间可能会错过概率密度最高的值
+
+```{r samples2, echo = T, fig.cap="偏斜的后验概率"}
+set.seed(1234)
+p_grid <- seq( from=0 , to=1 , length.out=1000 )
+prior <- rep(1,1000)
+likelihood <- dbinom( 3 , size=3 , prob=p_grid )
+posterior <- likelihood * prior
+posterior <- posterior / sum(posterior)
+samples <- sample( p_grid , size=1e4 , replace=TRUE , prob=posterior )
+dens(samples, xlab = "Proportion of water(p)")
+```
+
+对于上图，如果仅仅输出25~75%概率密度的部分，那么该区间显然不包括$p=1$，而显然该分布概率密度最高的位置是$p=1$。因此，此时HPDI更有用（Highest posterior density interval），该区间指最短的一条包括目标概率密度的区间，比如：
+
+```{r HDPI, echo = T}
+PI(samples, 0.5)
+HPDI(samples, prob = 0.5)
+```
+
+可以看到，HDPI包括了概率密度最高的部分，区间长度也要短些。大多数情况下，PI和HDPI十分接近，因为像上图这样严重偏斜的参数是较少见的。总的来说，HDPI和PI都是对后验分布的一种简单总结，如果两种方法得出的结果有大差异，我们应该直接呈现整个后验分布而不是简单总结它。
+
+### Point estimates
+
+一般来说，不推荐对整个后验概率分布给出点估计，因为这会丢失太多分布的信息。这里给出几个点估计的例子。
+
+一个最常用的点估计就是给出后验概率最大的那个估计（MAP，maximum a posteriori），对于上面的抛球实验例子（图5）
+
+```{r map, echo = T}
+p_grid[which.max(posterior)]
+```
+
+对于从后验分布抽出的样本，可以用`chainmode`函数：
+
+```{r map2, echo = T}
+chainmode(samples, adj = 0.01)
+```
+
+同样的，均值和中位数也是常见的点估计
+
+```{r mean_median, echo = T}
+mean(samples)
+median(samples)
+```
+
+点估计常常令人迷惑，到底哪一种才能更好的代表整个分布？一个解决办法就是引入*损失函数*，损失函数是一种将某个点估计与真实值差距量化的方法，往往差异越小，损失越小。
+
+在上面的抛球实验中，我们定义一个简单的损失函数，即将猜测值$d$和真实值$p$的差异的绝对值定义为损失函数。当然，我们是无法知道真实值的，对于后验概率`p_grid`，我们已经知道了其后验分布，那么我们可以将猜测值与`p_grid`的差异绝对值基于后验概率平均，这样就得到$d$在后验概率上的平均损失，我们假设$d=0.5$，那么有：
+
+```{r ave_loss, echo = T}
+sum(posterior * abs(0.5 - p_grid))
+```
+
+我们把所有的$p_grid$都作为猜测值计算一遍，就得到了所有后验概率的平均损失，只有找到哪一个值对应的平均损失最小就可以了：
+
+```{r find_min_loss, echo = T}
+loss <- sapply(p_grid, function(d){sum(posterior * abs(d - p_grid))})
+p_grid[which.min(loss)]
+```
+
+在该损失函数下，中位数的损失最小（与`median(sample)`会有差异）。常见的损失函数有上面的$d-p$，以及二次损失函数$(d-p)^2$。前者等价于中位数，后者等价于均值。当然，当后验分布接近高斯分布时，两者差距甚小。
+
+## Sampling to simulate prediction
+
+(这一小节关于Posterior predictive distribution部分没看懂)
+
+# Geocentric Models
+
