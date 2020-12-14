@@ -46,11 +46,16 @@ text(rep(0, 9), c(1:9), labels = paste("Model", c(1:9), sep = "."))
 ## 添加连线
 
 目前问题是，右下角连线位置不正确
+update:问题解决：是原始图像边距太小，通过改边距来使连线显示完整
 
 ```{r add_lines}
+par(mar = c(3.1, 2, 2, 1))
 
 corrplot(M, order = "AOE", type = "upper", tl.pos = "d")
 text(rep(0, 9), c(1:9), labels = paste("Model", c(1:9), sep = "."))
+# model 1
+segments(x0 = rep(0.5,11), y0 = rep(1, 11),
+         x1 = c(1:11), y1 = c(11:1), col = c(rep("red", 5), rep("black", 6)))
 # model 2
 segments(x0 = rep(0.5,11), y0 = rep(2, 11),
          x1 = c(1:11), y1 = c(11:1), col = c(rep("red", 5), rep("black", 6)))
